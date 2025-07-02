@@ -187,7 +187,8 @@ python3 -m pip install --user matplotlib pandas ultralytics==8.* tqdm
 ## Next Up → Day 2
 
 ### Record ROS2 bag
-```ros2 bag record /carla/hero/rgb_front/image \
+```
+ros2 bag record /carla/hero/rgb_front/image \
                 /carla/hero/rgb_front/camera_info \
                 /carla/hero/odometry \
                 /carla/hero/imu \
