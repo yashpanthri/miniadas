@@ -186,8 +186,14 @@ python3 -m pip install --user matplotlib pandas ultralytics==8.* tqdm
 
 ## Next Up → Day 2
 
-Recording a longer drive & prototyping OpenCV Canny+Hough lane detection. Stay tuned!
-
+### Record ROS2 bag
+'''ros2 bag record /carla/hero/rgb_front/image \
+                /carla/hero/rgb_front/camera_info \
+                /carla/hero/odometry \
+                /carla/hero/imu \
+                /tf \
+                /clock
+'''
 ---
 
 ### Why this README is "complete"
@@ -198,3 +204,7 @@ Recording a longer drive & prototyping OpenCV Canny+Hough lane detection. Stay t
 * **Troubleshooting** – lowers issue churn for collaborators.
 
 Drop the markdown into your repo, add your screenshots, `git add README.md`, and you're done with Day 1 documentation. Happy hacking! 
+
+
+
+Record
