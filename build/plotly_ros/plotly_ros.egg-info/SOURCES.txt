@@ -2,8 +2,10 @@ package.xml
 setup.cfg
 setup.py
 plotly_ros/__init__.py
+plotly_ros/carla_doit.py
 plotly_ros/carla_odom_dash.py
 plotly_ros/carla_odometry_msg.py
+plotly_ros/ros2bag_recorder.py
 plotly_ros.egg-info/PKG-INFO
 plotly_ros.egg-info/SOURCES.txt
 plotly_ros.egg-info/dependency_links.txt

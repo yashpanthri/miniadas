@@ -7,7 +7,7 @@ scatter plot that refreshes twice per second.
 Tested on ROS 2 Humble / Python 3.10 / Dash 3.x.
 """
 
-from collections import deque
+from collections import deque 
 from math import atan2
 from threading import Thread
 
@@ -43,12 +43,12 @@ class OdomBuffer(Node):
         self.create_subscription(
             Odometry,
             '/carla/hero/odometry',
-            self.odom_cb,
+            self.odom_callback,
             20,             # QoS queue depth
         )
         self.get_logger().info('Subscribed to /carla/hero/odometry')
 
-    def odom_cb(self, msg: Odometry):
+    def odom_callback(self, msg: Odometry):
         p = msg.pose.pose.position
         q = msg.pose.pose.orientation
         self.xy.append((p.x, p.y))
@@ -63,11 +63,11 @@ def launch_dash(node: OdomBuffer):
 
     app.layout = html.Div(
         [
-            html.H3('CARLA Ego-Vehicle Trajectory'),
+            html.H3('CARLA Ego-Vehicle Ideal/Ground Truth Trajectory'),
             dcc.Graph(id='traj-plot'),
             dcc.Interval(id='tick', interval=500, n_intervals=0),   # 500 ms
         ],
-        style={'width': '90%', 'margin': '0 auto'},
+        style={'width': '60%', 'margin': '0 auto'},
     )
 
     @app.callback(
@@ -80,22 +80,23 @@ def launch_dash(node: OdomBuffer):
             return go.Figure().update_layout(
                 xaxis_title='x [m]', yaxis_title='y [m]',
                 title='Waiting for data…'
-            )
+            ) # Sending empty plotly figure if node.xy is empty 
 
-        xs, ys = zip(*node.xy)
+        xs, ys = zip(*node.xy) #xs --> [x1,x2,x3...] #ys --> [y1,y2,y3...] #that is unpacks data
         fig = go.Figure(go.Scatter(
             x=xs, y=ys,
             mode='lines+markers',
             marker=dict(size=4),
             name='trajectory',
         ))
+        
         fig.update_layout(
             xaxis_title='x [m]', yaxis_title='y [m]',
             title=f'2-D path ({len(xs)} points)',
             autosize=True,
             margin=dict(l=40, r=20, t=50, b=40),
         )
-        fig.update_yaxes(scaleanchor='x', scaleratio=1)  # square aspect
+        # fig.update_yaxes(scaleanchor='x', scaleratio=1)  # square aspect
         return fig
 
     # Dash ≥ 3: use app.run()
@@ -110,6 +111,13 @@ def main():
 
     # Start Dash in a daemon thread so Ctrl-C stops everything cleanly
     Thread(target=launch_dash, args=(node,), daemon=True).start()
+    ''' Decomposition of above Syntax:
+    Thread(...)         --- You're creating a new Thread object
+    target=launch_dash  --- This tells the thread: “run the launch_dash() function.”
+    The launch_dash() function expects one argument (in use ROS node), so you pass it as a tuple.
+    daemon=True         --- Without it, Dash might keep running even after you Ctrl-C the ROS process.
+    .start()            --- This starts the thread immediately.
+    '''
 
     try:
         rclpy.spin(node)
