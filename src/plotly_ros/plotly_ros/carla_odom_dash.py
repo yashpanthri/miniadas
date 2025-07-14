@@ -57,7 +57,7 @@ class OdomBuffer(Node):
 
 # ---------- Dash app ---------------------------------------------------------
 
-def launch_dash(node: OdomBuffer):
+def launch_dash_odometry(node: OdomBuffer):
     """Run the Dash server in its own thread so ROS can spin."""
     app = dash.Dash(__name__)
 
@@ -96,7 +96,7 @@ def launch_dash(node: OdomBuffer):
             autosize=True,
             margin=dict(l=40, r=20, t=50, b=40),
         )
-        # fig.update_yaxes(scaleanchor='x', scaleratio=1)  # square aspect
+        fig.update_yaxes(scaleanchor='x', scaleratio=1)  # square aspect
         return fig
 
     # Dash ≥ 3: use app.run()
@@ -110,7 +110,7 @@ def main():
     node = OdomBuffer()
 
     # Start Dash in a daemon thread so Ctrl-C stops everything cleanly
-    Thread(target=launch_dash, args=(node,), daemon=True).start()
+    Thread(target=launch_dash_odometry, args=(node,), daemon=True).start()
     ''' Decomposition of above Syntax:
     Thread(...)         --- You're creating a new Thread object
     target=launch_dash  --- This tells the thread: “run the launch_dash() function.”

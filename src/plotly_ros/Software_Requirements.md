@@ -248,6 +248,7 @@ position_covariance_type: 0
 /carla/hero/vehicle_control_cmd_manual                                  =
 
 (ros2 interface show carla_msgs/msg/CarlaEgoVehicleControl)
+
 #
 # Copyright (c) 2018-2019 Intel Corporation.
 #
@@ -300,3 +301,19 @@ hand_brake: false
 reverse: false
 gear: 1
 manual_gear_shift: false
+
+
+
+
+#ROS2 BAG Recorded
+'''
+ros2 bag record /carla/hero/vehicle_control_cmd_manual /carla/hero/control/set_transform /carla/hero/control/set_target_velocity /carla/hero/gnss /carla/hero/imu /carla/hero/rgb_front/image /tf /carla/hero/odometry /carla/hero/radar_front /carla/hero/speedometer 
+'''
+
+
+
+
+
+Inorder to test run the bag and create the odometry topic plot:
+Terminal 1: ros2 bag play rosbag2_2025_07_11-05_09_26_0.db3 
+Terminal 2: python3 carla_odom_dash.py
