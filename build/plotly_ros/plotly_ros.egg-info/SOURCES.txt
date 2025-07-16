@@ -5,7 +5,11 @@ plotly_ros/__init__.py
 plotly_ros/carla_doit.py
 plotly_ros/carla_odom_dash.py
 plotly_ros/carla_odometry_msg.py
+plotly_ros/carla_pid.py
+plotly_ros/combined_plotly_dashboard.py
 plotly_ros/combined_plotly_plot.py
+plotly_ros/pid_ros2_node.py
+plotly_ros/python_pid.py
 plotly_ros/ros2bag_recorder.py
 plotly_ros.egg-info/PKG-INFO
 plotly_ros.egg-info/SOURCES.txt

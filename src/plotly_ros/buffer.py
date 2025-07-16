@@ -1,20 +1,13 @@
 #!/usr/bin/env python3
-"""
+'''
 Comprehensive Plotly Dash dashboard for multiple CARLA ROS 2 topics
 ------------------------------------------------------------------
-This script removes the tabbed interface and stacks every live view on
-**one scrollable page**, placing each graph/image below the previous one.
-
-Visualised streams  →  Sections in the page
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-- **/carla/hero/odometry**           ➜ "Odometry (x, y)"
-- **/carla/hero/gnss**               ➜ "GNSS (Lat, Lon)"
-- **/carla/hero/imu**                ➜ "IMU Accel"
-- **/carla/hero/speedometer**        ➜ "Speed (m/s)"
-- **/carla/hero/front_camera/image_raw** ➜ "Front Camera"
-
-> Tested on **ROS 2 Humble** / **Python 3.10** / **Dash 3.x**
-"""
+This version **adds millisecond‑precision timestamps** (rounded to three
+decimal places) to every odometry sample.  Each deque entry is now a
+triple `(t, x, y)` where `t` is seconds since epoch (or ROS clock) with
+3‑decimal precision (e.g. `42.137`).  The layout is still a single page
+(without tabs).
+'''
 
 # ------------------------- standard libs -----------------------------------
 from collections import deque
@@ -60,7 +53,7 @@ class CarlaDataBuffer(Node):
         self.bridge = CvBridge()  # for Image → cv2 → PNG
 
         # ---------------- circular buffers ---------------------------------
-        self.odometry_xy   = deque(maxlen=self.BUFFER_LEN)   # (x, y)
+        self.odometry_xy   = deque(maxlen=self.BUFFER_LEN)   # (t, x, y)
         self.gnss_latlon   = deque(maxlen=self.BUFFER_LEN)   # (lat, lon)
         self.imu_acceleration     = deque(maxlen=self.BUFFER_LEN)   # (ax, ay, az)
         self.speed_mps     = deque(maxlen=self.BUFFER_LEN)   # float
@@ -81,7 +74,7 @@ class CarlaDataBuffer(Node):
                                  self.speed_callback, 20)
         # ⑤ Front‑facing RGB camera
         self.create_subscription(Image,
-                                 '/carla/hero/rgb_front/image',  # /carla/hero/front_camera/image_raw
+                                 '/carla/hero/rgb_front/image', # /carla/hero/front_camera/image_raw
                                  self.cam_callback, 20)
 
         self.get_logger().info('Subscribed to odometry, GNSS, IMU, speedometer, camera')
@@ -89,7 +82,10 @@ class CarlaDataBuffer(Node):
     # ---------------- callback methods -------------------------------------
     def odom_callback(self, msg: Odometry):
         p = msg.pose.pose.position
-        self.odometry_xy.append((p.x, p.y))
+        # Build time stamp (secs + nsecs) and round to 3 decimals (millisecond)
+        stamp_sec = msg.header.stamp.sec + msg.header.stamp.nanosec * 1e-9
+        t = round(stamp_sec, 3)
+        self.odometry_xy.append((t, p.x, p.y))
 
     def gnss_callback(self, msg: NavSatFix):
         self.gnss_latlon.append((msg.latitude, msg.longitude))
@@ -107,7 +103,7 @@ class CarlaDataBuffer(Node):
         # Resize for faster UI refresh (optional)
         cv_img = cv2.resize(cv_img, (640, 360))
         _, png = cv2.imencode('.png', cv_img)
-        self.camera_frame = base64.b64encode(png.tobytes()).decode('utf-8')
+        self.camera_frame = base64.b64encode(png.tobytes()).decode('utf-8')  #'ascii'
 
 
 # ========================= Dash app ========================================
@@ -118,43 +114,20 @@ def launch_dash(node: CarlaDataBuffer):
     app = dash.Dash(__name__)
 
     # ---------- layout ------------------------------------------------------
-    # All views stacked vertically – no tabs.
     app.layout = html.Div([
         html.H2("CARLA Sensor Dashboard"),
-
-        # Odometry
-        html.Div([
-            html.H3('Odometry (x, y)'),
-            dcc.Graph(id='odom-plot'),
-        ], style={'marginBottom': '40px'}),
-
-        # GNSS
-        html.Div([
-            html.H3('GNSS (Lat, Lon)'),
-            dcc.Graph(id='gnss-plot'),
-        ], style={'marginBottom': '40px'}),
-
+        # Odometry path
+        dcc.Graph(id='odom-plot'),
+        # GNSS scatter
+        dcc.Graph(id='gnss-plot'),
         # IMU
-        html.Div([
-            html.H3('IMU Accel'),
-            dcc.Graph(id='imu-plot'),
-        ], style={'marginBottom': '40px'}),
-
-        # Speedometer
-        html.Div([
-            html.H3('Speed (m/s)'),
-            dcc.Graph(id='speed-plot'),
-        ], style={'marginBottom': '40px'}),
-
-        # Camera
-        html.Div([
-            html.H3('Front Camera'),
-            html.Img(id='cam-img', style={'width': '100%'}),
-        ], style={'marginBottom': '40px'}),
-
+        dcc.Graph(id='imu-plot'),
+        # Speed
+        dcc.Graph(id='speed-plot'),
+        # Camera feed
+        html.Img(id='cam-img', style={'width': '100%'}),
         # Master timer – every 0.5 s ask callbacks to regenerate figures
         dcc.Interval(id='tick', interval=500, n_intervals=0),
-
     ], style={'width': '80%', 'margin': '0 auto'})
 
     # ---------- callbacks ---------------------------------------------------
@@ -163,7 +136,7 @@ def launch_dash(node: CarlaDataBuffer):
     def _update_odom(_):
         if not node.odometry_xy:
             return go.Figure().update_layout(title='Waiting for odometry…')
-        xs, ys = zip(*node.odometry_xy)
+        ts, xs, ys = zip(*node.odometry_xy)  # unpack triple, ignore ts for path
         fig = go.Figure(go.Scatter(x=xs, y=ys, mode='lines+markers', marker={'size': 4}))
         fig.update_layout(title=f'Ego-vehicle path  •  {len(xs)} pts',
                           xaxis_title='x [m]', yaxis_title='y [m]')

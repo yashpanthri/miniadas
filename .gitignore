@@ -1,0 +1,15 @@
+my_robot_controller/
+key_07_01_2025
+key_07_01_2025.pub
+rosbag2_2025_07_01-03_22_24/
+*.json
+*.log
+src/ros-carla-msgs/
+install/carla_msgs/
+build/carla_msgs/
+src/plotly_ros/plotly_ros/rosbag2_2025_07_11-05_09_26
+src/plotly_ros/plotly_ros/complete_log.csv
+src/plotly_ros/plotly_ros/rosbag2_2025_07_15-03_58_32/
+src/plotly_ros/plotly_ros/rosbag2_2025_07_15-04_12_22/
+src/plotly_ros/plotly_ros/speed_error_log.csv
+src/plotly_ros/plotly_ros/complete_log_graph.png

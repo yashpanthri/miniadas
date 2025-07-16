@@ -14,7 +14,7 @@ Visualised streams  ⇢  Tabs created in Dash
 - **/carla/hero/speedometer**        ➜ "Speed (m/s)"       ← *NEW*
 - **/carla/hero/front_camera/image_raw** ➜ "Front Camera"   ← *NEW*
 
-> Tested on **ROS 2 Humble** / **Python 3.10** / **Dash 3.x**
+> Tested on **ROS 2 Humble** / **Python 3.10** / **Dash.1.1**
 """
 
 # ------------------------- standard libs -----------------------------------
@@ -54,7 +54,7 @@ def quaternion_to_yaw(q):
 class CarlaDataBuffer(Node):
     """Subscribes to the topics we want to plot & keeps *recent* data only."""
 
-    BUFFER_LEN = 2_000  # ≈40 s @50 Hz – adjust for your use‑case
+    BUFFER_LEN = 400  # ≈10 s @20 Hz – adjust for your use‑case
 
     def __init__(self):
         super().__init__('carla_data_buffer')
