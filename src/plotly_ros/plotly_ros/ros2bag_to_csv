@@ -21,6 +21,7 @@ def read_bag_to_csv(bag_path: str, output_csv: str, topic_name: str) -> None:
     # map {topic ➜ type string}
     topic_types = {info.name: info.type for info in reader.get_all_topics_and_types()}
     msg_class   = get_message(topic_types[topic_name])     # nav_msgs/msg/Odometry
+    first_timestamp = 0.0
 
     with open(output_csv, 'w', newline='') as f:
         writer = csv.writer(f)
@@ -28,12 +29,15 @@ def read_bag_to_csv(bag_path: str, output_csv: str, topic_name: str) -> None:
 
         while reader.has_next():
             topic, raw, t_nsec = reader.read_next() # topic name, raw bytes, timestamp in nanoseconds
+            if first_timestamp == 0.0:
+                first_timestamp = t_nsec * 1e-9  # convert to seconds
+
             if topic != topic_name:
                 continue        # skip other topics
 
             msg = deserialize_message(raw, msg_class)
             x_pos = msg.pose.pose.position.x                # full path
-            writer.writerow([t_nsec * 1e-9, x_pos])         # ns → s
+            writer.writerow([t_nsec * 1e-9 - first_timestamp, x_pos])         # ns → s
 
     print(f'Saved {output_csv}')
 # --------------------------------------------------------------------------- #
