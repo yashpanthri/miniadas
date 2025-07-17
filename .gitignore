@@ -18,3 +18,4 @@ src/plotly_ros/plotly_ros/rosbag2_2025_07_16-07_06_16/
 src/plotly_ros/plotly_ros/plot_odometry_x_position_vs_time.png
 src/plotly_ros/image.png
 src/plotly_ros/plotly_ros/PID tuning plots/
+src/plotly_ros/plotly_ros/odometry_x_position.csv
