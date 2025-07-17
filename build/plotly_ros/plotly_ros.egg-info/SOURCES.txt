@@ -8,7 +8,9 @@ plotly_ros/carla_odometry_msg.py
 plotly_ros/carla_pid.py
 plotly_ros/combined_plotly_dashboard.py
 plotly_ros/combined_plotly_plot.py
+plotly_ros/longitudinal_trajectory_control_pid.py
 plotly_ros/pid_ros2_node.py
+plotly_ros/plot_log_file.py
 plotly_ros/python_pid.py
 plotly_ros/ros2bag_recorder.py
 plotly_ros.egg-info/PKG-INFO

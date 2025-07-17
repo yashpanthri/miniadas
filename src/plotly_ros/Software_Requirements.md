@@ -317,3 +317,23 @@ ros2 bag record /carla/hero/vehicle_control_cmd_manual /carla/hero/control/set_t
 Inorder to test run the bag and create the odometry topic plot:
 Terminal 1: ros2 bag play rosbag2_2025_07_11-05_09_26_0.db3 
 Terminal 2: python3 carla_odom_dash.py
+
+
+
+
+
+
+
+
+
+
+Nodes/Code files:
+1. combined_plotly_dashboard.py --> A complete dashboard of sensor data by plotly dash
+2. pid_ros2_node.py --> PID implementation on a vehicle which starts from 0m/s to 15m/s speed and also stores a log of some important datas like throttle, brake, error, PID signal
+3. plot_log_file.py --> Plots graphs using matplotlib
+
+
+
+
+Recorded ros2 bag then ploted using the combined_plotly_dashboard.py python3 node
+![alt text](image.png)

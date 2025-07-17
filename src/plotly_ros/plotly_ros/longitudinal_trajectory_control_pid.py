@@ -129,7 +129,7 @@ def main(args = None):
         rclpy.spin(node)
     finally:
         # node.destory_node()
-        df.to_csv("complete_log.csv", index=False)
+        df.to_csv("pure_pursuit_complete_log.csv", index=False)
         rclpy.shutdown()
 
 
