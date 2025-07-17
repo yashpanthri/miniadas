@@ -88,15 +88,19 @@ class CarlaDataBuffer(Node):
         # #1. Odometry
         # self.create_subscription(Odometry, '/carla/hero/odometry', self.odom_callback, 20)
 
-
-
+        # Set timestamp for the first message
+        self.first_timestamp = {'odom' : 0.0, 'gnss' : 0.0, 'imu' : 0.0, 'speedometer' : 0.0}  # Initialize the clock
+        self.timestamped = float
         self.get_logger().info("Subscribed to Odometry, GNSS, IMU, Speedometer and Front RGB Camera")
     
     
     # --------- Timestamp Methods ----------------
-    def timestamp(self, stamp):
+    def timestamp(self, stamp, ttype):
         '''Return header stamp as float seconds (3 decimal places).'''
-        return round(stamp.sec + stamp.nanosec * 1e-9, 3)
+        if self.first_timestamp[ttype] == 0.0:
+            self.first_timestamp[ttype] = round(stamp.sec + stamp.nanosec * 1e-9, 3)
+        self.timestamped = round(stamp.sec + stamp.nanosec * 1e-9 - self.first_timestamp[ttype], 3)
+        return self.timestamped
     
 
 #-------------------------------------------------------------------------------------------------------
@@ -112,7 +116,7 @@ class CarlaDataBuffer(Node):
     '''
     def odom_callback(self, msg: Odometry):
         p = msg.pose.pose.position
-        t = self.timestamp(msg.header.stamp)
+        t = self.timestamp(msg.header.stamp, 'odom')
         self.odometry_txy.append((t, p.x, p.y))
 
 
@@ -123,7 +127,7 @@ class CarlaDataBuffer(Node):
     sensor_msgs/NavSatStatus status
     '''
     def gnss_callback(self, msg: NavSatFix):
-        t = self.timestamp(msg.header.stamp)
+        t = self.timestamp(msg.header.stamp, 'gnss')
         self.gnss_tlat_lon.append((t, msg.latitude, msg.longitude))
 
 
@@ -136,7 +140,7 @@ class CarlaDataBuffer(Node):
     '''
     def imu_callback(self, msg: Imu):
         a = msg.linear_acceleration
-        t = self.timestamp(msg.header.stamp)
+        t = self.timestamp(msg.header.stamp, 'imu')
         self.imu_taccel.append((t, a.x, a.y, a.z))
 
 
@@ -146,7 +150,7 @@ class CarlaDataBuffer(Node):
     *Publisher may omit Header; we timestamp locally*
     '''
     def speed_callback(self, msg: Float32):
-        t = round(self.get_clock().now().nanoseconds * 1e-9, 3)
+        t = self.timestamped
         self.speed_tmps.append((t, msg.data))
 
 
