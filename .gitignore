@@ -21,3 +21,6 @@ src/plotly_ros/plotly_ros/PID tuning plots/
 src/plotly_ros/plotly_ros/odometry_x_position.csv
 src/plotly_ros/plotly_ros/odometry_x_pos_and_vel.csv
 src/plotly_ros/plotly_ros/pid_trajectory_log.csv
+src/plotly_ros/plotly_ros/reference_and_pid_trajectory_vs_time.png
+src/plotly_ros/plotly_ros/PIDBUFFER.py
+src/plotly_ros/plotly_ros/longitudinal_speed_matching_pid.py
