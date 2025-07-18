@@ -25,7 +25,7 @@ def read_bag_to_csv(bag_path: str, output_csv: str, topic_name: str) -> None:
 
     with open(output_csv, 'w', newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(['stamp_sec', 'x_pos'])
+        writer.writerow(['stamp_sec', 'x_pos', 'x_vel'])
 
         while reader.has_next():
             topic, raw, t_nsec = reader.read_next() # topic name, raw bytes, timestamp in nanoseconds
@@ -37,7 +37,8 @@ def read_bag_to_csv(bag_path: str, output_csv: str, topic_name: str) -> None:
 
             msg = deserialize_message(raw, msg_class)
             x_pos = msg.pose.pose.position.x                # full path
-            writer.writerow([t_nsec * 1e-9 - first_timestamp, x_pos])         # ns → s
+            x_vel = msg.twist.twist.linear.x
+            writer.writerow([t_nsec * 1e-9 - first_timestamp, x_pos, x_vel])         # ns → s
 
     print(f'Saved {output_csv}')
 # --------------------------------------------------------------------------- #
@@ -48,7 +49,7 @@ if __name__ == '__main__':
         rclpy.init()
 
         BAG_DIR = '/home/yashpanthri-unbuntu22/CARLA_PROJECT/mini_adas/src/plotly_ros/plotly_ros/rosbag2_2025_07_16-07_06_16'
-        OUT_CSV = '/home/yashpanthri-unbuntu22/CARLA_PROJECT/mini_adas/src/plotly_ros/plotly_ros/odometry_x_position.csv'
+        OUT_CSV = '/home/yashpanthri-unbuntu22/CARLA_PROJECT/mini_adas/src/plotly_ros/plotly_ros/odometry_x_pos_and_vel.csv'
         TOPIC   = '/carla/hero/odometry'
 
         read_bag_to_csv(BAG_DIR, OUT_CSV, TOPIC)

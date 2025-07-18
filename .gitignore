@@ -19,3 +19,5 @@ src/plotly_ros/plotly_ros/plot_odometry_x_position_vs_time.png
 src/plotly_ros/image.png
 src/plotly_ros/plotly_ros/PID tuning plots/
 src/plotly_ros/plotly_ros/odometry_x_position.csv
+src/plotly_ros/plotly_ros/odometry_x_pos_and_vel.csv
+src/plotly_ros/plotly_ros/pid_trajectory_log.csv
