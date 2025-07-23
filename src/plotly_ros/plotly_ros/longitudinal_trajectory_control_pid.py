@@ -63,6 +63,7 @@ class PIDController(Node):
         self.err_int          : float = 0.0           # integral error
         self.err_prev         : float = 0.0           # error[k-1]
         self.ts_prev          : float | None = None   # sim time[k-1]
+        self.actual_x_pos   : float | None = None   # actual x position (for logging)
 
         # ------------ 4  Data-logging dataframe --------------------------
         self.log = pd.DataFrame(
@@ -85,6 +86,7 @@ class PIDController(Node):
             # self.get_logger().info(f"First odometry x_vel: {self.first_x_vel:.3f} m/s")
 
         # Zero the longitudinal position so log and reality start at ~0 m
+        self.actual_x_pos = msg.pose.pose.position.x
         self.cur_x_pos = msg.pose.pose.position.x - self.first_x_pos
         self.cur_x_vel = msg.twist.twist.linear.x
 
@@ -143,7 +145,7 @@ class PIDController(Node):
 
         # ---------- 6  Logging -------------------------------------------
         self.log.loc[len(self.log)] = [
-            sim_time, dist_err, vel_err, throttle, brake, acc_cmd, self.cur_x_pos, self.cur_x_vel
+            sim_time, dist_err, vel_err, throttle, brake, acc_cmd, self.actual_x_pos, self.cur_x_vel
         ]
         # # Write the most recent log entry to CSV
         # self.log.iloc[[-1]].to_csv(   # only the most recent row
@@ -158,7 +160,8 @@ class PIDController(Node):
             self.get_logger().info("Reference complete - full brake and shutdown.")
             cmd.throttle, cmd.brake = 0.0, 1.0
             self.pub.publish(cmd)
-            rclpy.shutdown()
+            if(self.cur_x_vel == 0.0):
+                rclpy.shutdown()
 
     # ────────────────────────────────────────────────────────────────────
     #  On destruction, dump the log CSV
