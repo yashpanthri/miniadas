@@ -337,3 +337,68 @@ Nodes/Code files:
 
 Recorded ros2 bag then ploted using the combined_plotly_dashboard.py python3 node
 ![alt text](image.png)
+
+
+
+
+**Vehicle info:**
+yashpanthri-unbuntu22@yash-ubuntu22:~$ ros2 topic echo /carla/hero/vehicle_info
+id: 47
+type: vehicle.dodge.charger_police_2020
+rolename: hero
+wheels:
+- tire_friction: 3.5
+  damping_rate: 0.25
+  max_steer_angle: 1.221730351448059
+  radius: 35.0
+  max_brake_torque: 1000.0
+  max_handbrake_torque: 0.0
+  position:
+    x: 1.6108945533762609
+    y: 0.8119727103953238
+    z: 0.28433973789215083
+- tire_friction: 3.5
+  damping_rate: 0.25
+  max_steer_angle: 1.221730351448059
+  radius: 35.0
+  max_brake_torque: 1000.0
+  max_handbrake_torque: 0.0
+  position:
+    x: 1.610894874585074
+    y: -0.8119741922984289
+    z: 0.28433973789215083
+- tire_friction: 3.5
+  damping_rate: 0.25
+  max_steer_angle: 0.0
+  radius: 35.0
+  max_brake_torque: 1000.0
+  max_handbrake_torque: 2000.0
+  position:
+    x: -1.4329524936112192
+    y: 0.8269106095270189
+    z: 0.28433973789215083
+- tire_friction: 3.5
+  damping_rate: 0.25
+  max_steer_angle: 0.0
+  radius: 35.0
+  max_brake_torque: 1000.0
+  max_handbrake_torque: 2000.0
+  position:
+    x: -1.4329483623879242
+    y: -0.8269143526525582
+    z: 0.28433973789215083
+max_rpm: 8000.0
+moi: 1.0
+damping_rate_full_throttle: 0.05000000074505806
+damping_rate_zero_throttle_clutch_engaged: 2.0
+damping_rate_zero_throttle_clutch_disengaged: 0.3499999940395355
+use_gear_autobox: true
+gear_switch_time: 0.10000000149011612
+clutch_strength: 10.0
+mass: 1920.0
+drag_coefficient: 0.30000001192092896
+center_of_mass:
+  x: 0.09999999403953552
+  y: 0.0
+  z: -0.19999998807907104
+---

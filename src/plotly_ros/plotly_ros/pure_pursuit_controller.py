@@ -1,13 +1,4 @@
 #!/usr/bin/env python3
-"""
-Longitudinal PID controller that tries to make the CARLA ego vehicle
-match the longitudinal position/velocity contained in a reference CSV.
-
-CSV columns:
-    stamp_sec  -> time stamp in seconds (monotonic, starting at 0)
-    x_pos      -> longitudinal position  [m]
-    x_vel      -> longitudinal velocity  [m s⁻¹]
-"""
 
 import rclpy
 from rclpy.node import Node
@@ -16,14 +7,23 @@ from carla_msgs.msg import CarlaEgoVehicleControl
 import numpy as np
 import pandas as pd
 from pathlib import Path
+from std_msgs.msg import Float32
+
+
 
 # ─── File locations ─────────────────────────────────────────────────────
-_BASE = Path("/home/yashpanthri-unbuntu22/CARLA_PROJECT/mini_adas/src/plotly_ros/plotly_ros") # base directory
-TRAJ_CSV = _BASE / "odometry_x_pos_and_vel.csv" # reference trajectory CSV
-PID_LOG  = _BASE / "pid_trajectory_log.csv" # log file for PID controller
+_BASE = Path("/home/yashpanthri-unbuntu22/CARLA_PROJECT/mini_adas/src/plotly_ros/plotly_ros")
+TRAJ_CSV = _BASE / "traj.csv"
+PP_LOG  = _BASE / "pp_log.csv"
 
 # ─── Hyper-parameters ───────────────────────────────────────────────────
 CTRL_HZ          = 20.0          # main control loop rate   [Hz]
+MAX_STEER_ANGLE = 0.61 # max steering angle in radians
+MAX_LD = 25.0 # max look-ahead distance [m]
+MIN_LD = 5.0  # min look-ahead distance [m]
+WORLD_FRAME = "world"  # world frame for the trajectory
+EGO_FRAME  = "base_link"  # frame of the ego vehicle
+
 LOOKAHEAD_SEC    = 1.0 / CTRL_HZ # preview horizon (one step)
 KP, KI, KD       = 0.4, 0.01, 0.3 # PID gains   (tune!)
 A_MAX, B_MAX     =  3.0,  6.0    # full-throttle / full-brake accel [m s⁻²]
@@ -35,12 +35,11 @@ class PIDController(Node):
 
         # ------------ 1  Load & cache reference trajectory ---------------
         traj = pd.read_csv(TRAJ_CSV)
-        self.t_ref = traj["stamp_sec"].to_numpy() - traj["stamp_sec"].iloc[0]
-        self.x_ref = traj["x_pos"].to_numpy() #- traj["x_pos"].iloc[0]  # zeroed at start
-        self.v_ref = traj["x_vel"].to_numpy() #- traj["x_vel"].iloc[0]  # zeroed at start
-        self.get_logger().info(f"First reference time: {self.t_ref[0]:.3f} s")
-        self.get_logger().info(f"First reference x_pos: {self.x_ref[0]:.3f} m")
-        self.get_logger().info(f"First reference x_vel: {self.x_ref[0]:.3f} m/s")
+        self.t_ref = traj["stamp_sec"].to_numpy() - traj["stamp_sec"].iloc[0] # Trajectory time in seconds
+        self.x_ref = traj["x_pos"].to_numpy() # Trajectory longitudinal position in meters
+        self.y_ref = traj["y_pos"].to_numpy() # Trajectory lateral position in meters ===========================================
+        self.v_x_ref = traj["x_vel"].to_numpy() # Trajectory longitudinal velocity in m/
+        self.v_y_ref = traj["y_vel"].to_numpy() # Trajectory lateral velocity in m/s ===========================================
 
         # ------------ 2  ROS I/O -----------------------------------------
         self.pub = self.create_publisher(
@@ -54,12 +53,30 @@ class PIDController(Node):
             self.odom_cb,
             20,
         )
+        # ===========================================
+        self.sub_speed = self.create_subscription(
+            Float32
+            "/carla/hero/speedometer",
+            self.speed_cb,
+            20,
+        )
 
         # ------------ 3  Controller state --------------------------------
-        self.first_sim_time   : float | None = None   # wall-clock start (sec)
-        self.first_x_pos      : float | None = None   # to zero the position
+        self.first_sim_time   : float | None = None   # wall-clock start (sec) or simulation start time(conception of first message on the topic /carla/hero/odometry)
+        self.first_x_pos      : float | None = None   # to zero the position or simulation start x position(first x position message on the topic /carla/hero/odometry)
+        self.first_y_pos      : float | None = None   # to zero the position or simulation start y position(first y position message on the topic /carla/hero/odometry)        # ===========================================
+
+
         self.cur_x_pos        : float | None = None
         self.cur_x_vel        : float | None = None
+        self.cur_y_pos        : float | None = None        # ===========================================
+        self.cur_y_vel        : float | None = None        # ===========================================
+
+        self.curr_speed       : float | None = None   # Current wheel speed of the vehicle        # ===========================================
+
+
+
+        #==============================================figure it out ==============================================
         self.err_int          : float = 0.0           # integral error
         self.err_prev         : float = 0.0           # error[k-1]
         self.ts_prev          : float | None = None   # sim time[k-1]
@@ -67,7 +84,7 @@ class PIDController(Node):
         # ------------ 4  Data-logging dataframe --------------------------
         self.log = pd.DataFrame(
             columns=["stamp_sec", "dist_err", "vel_err",
-                     "throttle", "brake", "pid_sum", "x_pos", "x_vel"]
+                     "throttle", "brake", "pid_sum", "x_pos", "x_vel", "y_pos", "y_vel", "speed", "steer"] # Added y_pos(curr_y_pos), y_vel(curr_y_vel), speed(curr_speed), steer for logging        # ===========================================
         )
 
         # Main loop timer (runs only when odom is flowing)
@@ -80,14 +97,62 @@ class PIDController(Node):
         if self.first_sim_time is None:
             self.first_sim_time = self.get_clock().now().nanoseconds * 1e-9
             self.first_x_pos    = msg.pose.pose.position.x
-            self.get_logger().info(f"First odometry time: {self.first_sim_time:.3f} s")
-            self.get_logger().info(f"First odometry x_pos: {self.first_x_pos:.3f} m")
-            # self.get_logger().info(f"First odometry x_vel: {self.first_x_vel:.3f} m/s")
+            self.first_y_pos    = msg.pose.pose.position.y
 
         # Zero the longitudinal position so log and reality start at ~0 m
         self.cur_x_pos = msg.pose.pose.position.x - self.first_x_pos
         self.cur_x_vel = msg.twist.twist.linear.x
+        self.cur_y_pos = msg.pose.pose.position.y - self.first_y_pos
+        self.cur_y_vel = msg.twist.twist.linear.y
 
+
+    #==============================================figure it out ==============================================
+    # ────────────────────────────────────────────────────────────────────
+    #  Odometry callback – keeps latest measurement in memory
+    # ────────────────────────────────────────────────────────────────────
+    def speed_cb(self, msg: Float32) -> None:
+        self.curr_speed = msg.data
+
+
+
+
+    #==============================================figure it out ==============================================
+
+
+
+    def quaternion_to_euler(self, q):
+        """
+        Convert a quaternion into euler angles (roll, pitch, yaw).
+        :param q: Quaternion as a list or tuple (x, y, z, w)
+        :return: Euler angles as a tuple (roll, pitch, yaw) in radians
+        """
+        x, y, z, w = q
+        roll = np.arctan2(2.0 * (y * z + w * x), w * w - x * x - y * y + z * z)
+        pitch = np.arcsin(-2.0 * (x * z - w * y))
+        yaw = np.arctan2(2.0 * (x * y + w * z), w * w + x * x - y * y - z * z)
+        return roll, pitch, yaw
+
+    def get_target_point(self, l_d: float, pos: tuple, pos_theta: float):
+        """
+        Get the target point at a distance l_d from the current position pos with orientation pos_theta.
+        :param l_d: distance to the target point
+        :param pos: current position (x, y)
+        :param pos_theta: current orientation in radians
+        :return: target point (x, y)
+        """
+        x_tp = pos[0] + l_d * np.cos(pos_theta) 
+        y_tp = pos[1] + l_d * np.sin(pos_theta)
+        return x_tp, y_tp
+    
+
+
+
+
+
+
+    
+
+    #==============================================figure it out ==============================================
     # ────────────────────────────────────────────────────────────────────
     #  Main control loop (fixed rate, but skips if odom not yet ready)
     # ────────────────────────────────────────────────────────────────────
@@ -108,7 +173,7 @@ class PIDController(Node):
         If x is greater than the largest xp, return right.
         '''
         x_next   = float(np.interp(t_next, self.t_ref, self.x_ref, left=self.x_ref[0], right=self.x_ref[-1]))
-        v_max    = float(np.interp(t_next, self.t_ref, self.v_ref, left=self.v_ref[0], right=self.v_ref[-1]))
+        v_max    = float(np.interp(t_next, self.t_ref, self.v_x_ref, left=self.v_x_ref[0], right=self.v_x_ref[-1]))
 
         # ---------- 2  Errors & desired velocity -------------------------
         dist_err = x_next - self.cur_x_pos          # [m]
@@ -145,13 +210,6 @@ class PIDController(Node):
         self.log.loc[len(self.log)] = [
             sim_time, dist_err, vel_err, throttle, brake, acc_cmd, self.cur_x_pos, self.cur_x_vel
         ]
-        # # Write the most recent log entry to CSV
-        # self.log.iloc[[-1]].to_csv(   # only the most recent row
-        # PID_LOG, 
-        # mode='a',          # append
-        # header=not PID_LOG.exists(),  # write header only once
-        # index=False,
-        # )
 
         # Stop after we pass the last reference stamp
         if sim_time >= self.t_ref[-1]:
@@ -166,7 +224,7 @@ class PIDController(Node):
     def destroy_node(self) -> None:
         super().destroy_node()
         self.log.to_csv(PID_LOG, index=False)
-        self.get_logger().info(f"wrote {PID_LOG}")
+        self.get_logger().info(f"✓ wrote {PID_LOG}")
 
 # ─── Main ───────────────────────────────────────────────────────────────
 def main(argv=None) -> None:

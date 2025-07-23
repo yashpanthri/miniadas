@@ -25,7 +25,7 @@ def read_bag_to_csv(bag_path: str, output_csv: str, topic_name: str) -> None:
 
     with open(output_csv, 'w', newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(['stamp_sec', 'x_pos', 'x_vel'])
+        writer.writerow(['stamp_sec', 'x_pos', 'x_vel', 'y_pos', 'y_vel'])  # header
 
         while reader.has_next():
             topic, raw, t_nsec = reader.read_next() # topic name, raw bytes, timestamp in nanoseconds
@@ -38,7 +38,10 @@ def read_bag_to_csv(bag_path: str, output_csv: str, topic_name: str) -> None:
             msg = deserialize_message(raw, msg_class)
             x_pos = msg.pose.pose.position.x                # full path
             x_vel = msg.twist.twist.linear.x
-            writer.writerow([t_nsec * 1e-9 - first_timestamp, x_pos, x_vel])         # ns → s
+            y_pos = msg.pose.pose.position.y 
+            y_vel = msg.twist.twist.linear.y
+            
+            writer.writerow([t_nsec * 1e-9 - first_timestamp, x_pos, x_vel, y_pos, y_vel])         # ns → s
 
     print(f'Saved {output_csv}')
 # --------------------------------------------------------------------------- #
