@@ -51,7 +51,7 @@ Quaternion orientation
 	float64 z 0
 	float64 w 1
 
-Use: ros2 topic pub /carla/hero/control/set_transform geometry_msgs/msg/Pose "{position: {x: 70.2, y: -134.0, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: 0.9999960895574291, w: 0.002796581815395667}}"
+Use: ros2 topic pub /carla/hero/control/set_transform geometry_msgs/msg/Pose "{position: {x: 70.1969985961914, y: -134.0, z: 0.0}, orientation: {x: 0.0, y: 0.0, z: 0.9999960895574291, w: 0.002796581815395667}}"
 
 With full acceleration the vehicle speed reaches more than 82km/hr
 

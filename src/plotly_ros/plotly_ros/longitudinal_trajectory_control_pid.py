@@ -25,7 +25,7 @@ PID_LOG  = _BASE / "pid_trajectory_log.csv" # log file for PID controller
 # ─── Hyper-parameters ───────────────────────────────────────────────────
 CTRL_HZ          = 20.0          # main control loop rate   [Hz]
 LOOKAHEAD_SEC    = 1.0 / CTRL_HZ # preview horizon (one step)
-KP, KI, KD       = 0.6, 0.01, 0.3 # PID gains   (tune!)
+KP, KI, KD       = 10.0, 0.01, 1.0 # PID gains   (tune!)
 A_MAX, B_MAX     =  3.0,  6.0    # full-throttle / full-brake accel [m s⁻²]
 
 class PIDController(Node):

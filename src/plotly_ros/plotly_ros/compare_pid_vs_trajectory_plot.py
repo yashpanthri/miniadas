@@ -115,20 +115,20 @@ if var2 == True:
 #     plt.tight_layout()
 #     plt.show()
 
+if(False):
+    import plotly.express as px
 
-import plotly.express as px
+    # x_ref, y_ref, t_ref should already hold your data
+    fig = px.scatter(
+        x=x_ref,
+        y=y_ref,
+        hover_data={
+            "time [s]": t_ref,
+            "x position [m]": x_ref,
+            "y position [m]": y_ref
+        },
+        labels={"x": "x position [m]", "y": "y position [m]"},
+        title="XY trajectory  (hover to see time & coordinates)",
+    )
 
-# x_ref, y_ref, t_ref should already hold your data
-fig = px.scatter(
-    x=x_ref,
-    y=y_ref,
-    hover_data={
-        "time [s]": t_ref,
-        "x position [m]": x_ref,
-        "y position [m]": y_ref
-    },
-    labels={"x": "x position [m]", "y": "y position [m]"},
-    title="XY trajectory  (hover to see time & coordinates)",
-)
-
-fig.show()
+    fig.show()
