@@ -51,3 +51,5 @@ build/plotly_ros/colcon_command_prefix_setup_py.sh.env
 build/plotly_ros/plotly_ros.egg-info/SOURCES.txt
 build/plotly_ros/prefix_override/__pycache__/sitecustomize.cpython-310.pyc
 log/latest_build
+src/plotly_ros/plotly_ros/.~lock.carla_merged_data.csv#
+src/plotly_ros/plotly_ros/CSV/preprocessed_trajectory.txt
