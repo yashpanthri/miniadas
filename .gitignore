@@ -24,3 +24,26 @@ src/plotly_ros/plotly_ros/pid_trajectory_log.csv
 src/plotly_ros/plotly_ros/reference_and_pid_trajectory_vs_time.png
 src/plotly_ros/plotly_ros/PIDBUFFER.py
 src/plotly_ros/plotly_ros/longitudinal_speed_matching_pid.py
+src/plotly_ros/plotly_ros/PP_BUFFER.py
+src/plotly_ros/plotly_ros/max_acc_max_brake.py
+build/plotly_ros/colcon_command_prefix_setup_py.sh.env
+carla_merged_data.csv
+build/plotly_ros/colcon_command_prefix_setup_py.sh.env
+build/plotly_ros/plotly_ros.egg-info/SOURCES.txt
+build/plotly_ros/prefix_override/__pycache__/sitecustomize.cpython-310.pyc
+build/*
+src/plotly_ros/plotly_ros/PID_longitudinal datas/1 with limited data and 20hz/odometry_x_pos_and_vel.csv
+src/plotly_ros/plotly_ros/PID_longitudinal datas/1 with limited data and 20hz/speed_error_log.csv
+src/plotly_ros/plotly_ros/PID_longitudinal datas/1 with limited data and 20hz/pid_trajectory_log.csv
+src/plotly_ros/plotly_ros/PID_longitudinal datas/1 with limited data and 20hz/plot_odometry_x_position_vs_time.png
+src/plotly_ros/plotly_ros/PID_longitudinal datas/1 with limited data and 20hz/reference_and_pid_trajectory_vs_time.png
+src/plotly_ros/plotly_ros/PID_longitudinal datas/1 with limited data and 20hz/rosbag2_2025_07_16-07_06_16/rosbag2_2025_07_16-07_06_16_0.db3
+src/plotly_ros/plotly_ros/PID_longitudinal datas/1 with limited data and 20hz/rosbag2_2025_07_16-07_06_16/metadata.yaml
+build/plotly_ros/colcon_command_prefix_setup_py.sh.env
+build/plotly_ros/plotly_ros.egg-info/SOURCES.txt
+build/plotly_ros/prefix_override/__pycache__/sitecustomize.cpython-310.pyc
+log/latest_build
+build/plotly_ros/colcon_command_prefix_setup_py.sh.env
+build/plotly_ros/plotly_ros.egg-info/SOURCES.txt
+build/plotly_ros/prefix_override/__pycache__/sitecustomize.cpython-310.pyc
+log/latest_build
