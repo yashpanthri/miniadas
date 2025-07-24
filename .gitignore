@@ -99,4 +99,5 @@ src/plotly_ros/plotly_ros/log/latest_build
 build/plotly_ros/colcon_command_prefix_setup_py.sh.env
 build/plotly_ros/plotly_ros.egg-info/SOURCES.txt
 build/plotly_ros/prefix_override/__pycache__/sitecustomize.cpython-310.pyc
+build/*
 log/latest_build
