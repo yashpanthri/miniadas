@@ -1,1 +1,1 @@
-dash:pandas:plotly:rclpy:ros_numpy:rosbag2_py:std_msgs
+carla_msgs:cv_bridge:dash:geometry_msgs:image_transport:matplotlib:nav_msgs:numpy:opencv-python:pandas:plotly:rclpy:ros_numpy:rosbag2_py:scipy:sensor_msgs:std_msgs

@@ -31,7 +31,7 @@ A_MAX, B_MAX     =  3.0,  6.0    # full-throttle / full-brake accel [m s⁻²]
 
 class OdomTransformNode(Node):
     def __init__(self):
-        super().__init__('odom_transform_node')
+        super().__init__('final_pid')
 
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)

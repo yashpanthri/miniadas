@@ -1,6 +1,7 @@
 package.xml
 setup.cfg
 setup.py
+launch/trajectorypublisher_finalpid_launch.py
 plotly_ros/PIDBUFFER.py
 plotly_ros/PP_BUFFER.py
 plotly_ros/__init__.py

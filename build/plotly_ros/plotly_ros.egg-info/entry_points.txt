@@ -1,3 +1,5 @@
 [console_scripts]
-
+combined_plotly_dashboard = plotly_ros.combined_plotly_dashboard:main
+final_pid = plotly_ros.final_pid:main
+trajectory_publisher = plotly_ros.trajectory_publisher:main
 

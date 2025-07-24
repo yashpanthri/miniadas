@@ -59,7 +59,7 @@ class CarlaDataBuffer(Node):
 
 
     def __init__(self):
-        super().__init__("Carla_data_buffer")
+        super().__init__("combined_plotly_dashboard") # combined_plotly_dashboard is the name of the node
         self.bridge = CvBridge() # for Image --> cv2 --> PNG
 
         # --------- Deques for ----------------

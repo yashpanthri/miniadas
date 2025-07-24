@@ -1,4 +1,8 @@
 from setuptools import find_packages, setup
+#ADD
+import os
+from glob import glob
+#END ADD
 
 package_name = 'plotly_ros'
 
@@ -10,6 +14,13 @@ setup(
         ('share/ament_index/resource_index/packages',
             ['resource/' + package_name]),
         ('share/' + package_name, ['package.xml']),
+
+#ADD
+        (os.path.join('share',package_name,
+        'launch'), glob(os.path.join('launch',
+        '*launch.[pxy][yma]*')))
+
+#END ADD
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -20,6 +31,9 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
+            'trajectory_publisher = plotly_ros.trajectory_publisher:main',
+            'final_pid = plotly_ros.final_pid:main',
+            'combined_plotly_dashboard = plotly_ros.combined_plotly_dashboard:main',
         ],
     },
 )
