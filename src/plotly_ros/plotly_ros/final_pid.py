@@ -4,7 +4,6 @@ Longitudinal PID controller that tries to make the CARLA ego vehicle
 match the longitudinal position/velocity contained in a reference CSV.
 
 CSV columns:
-    stamp_sec  -> time stamp in seconds (monotonic, starting at 0)
     x_pos      -> longitudinal position  [m]
     x_vel      -> longitudinal velocity  [m s⁻¹]
 """
@@ -13,6 +12,7 @@ import rclpy
 from rclpy.node import Node
 from nav_msgs.msg import Odometry
 from carla_msgs.msg import CarlaEgoVehicleControl
+from std_msgs.msg import String
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -36,9 +36,45 @@ class OdomTransformNode(Node):
         self.tf_buffer = Buffer()
         self.tf_listener = TransformListener(self.tf_buffer, self)
 
-        self.subscription = self.create_subscription(
-            Odometry,
-            '/your/odometry/topic',
-            self.odom_callback,
-            10
-        )
+        self.odom_sub = self.create_subscription(Odometry,'/carla/hero/odometry',self.odom_callback,20)
+        self.trajectory_sub = self.create_subscription(String,'trajectory_data',self.trajectory_callback,2)
+
+        
+
+        # Initialize variables
+        self.trajectory_data = None
+        self.curr_x_pos = 0.0   
+        self.curr_y_pos = 0.0
+        self.curr_x_vel = 0.0
+        self.curr_y_vel = 0.0
+        self.flag_reach_initial_x_pos = False
+
+    def odom_callback(self, msg: Odometry):
+            # Transform the odometry message to the desired frame
+            pass
+
+    def trajectory_callback(self, msg: String):
+        """
+        Callback to recieve trajectory data array as a string.
+        """
+        self.trajectory_data = msg.data
+        self.get_logger().info(f"Received trajectory data string: {self.trajectory_data}")
+        # Process the trajectory data as needed
+        pass
+
+
+
+
+def main():
+    rclpy.init()
+    node = OdomTransformNode()
+    try:
+        rclpy.spin(node)
+    except Exception as e:
+        node.get_logger().error(f"Error occurred: {e}")
+    finally:
+        node.destroy_node()
+        rclpy.shutdown()
+
+if __name__ == '__main__':
+    main()
