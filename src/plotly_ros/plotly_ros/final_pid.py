@@ -16,7 +16,10 @@ from std_msgs.msg import String
 import numpy as np
 import pandas as pd
 from pathlib import Path
-from tf2_ros import Buffer, TransformListener
+# from tf2_ros import Buffer, TransformListener
+import math
+import ast
+
 
 # ─── File locations ─────────────────────────────────────────────────────
 _BASE = Path("/home/yashpanthri-unbuntu22/CARLA_PROJECT/mini_adas/src/plotly_ros/plotly_ros") # base directory
@@ -34,21 +37,21 @@ class OdomTransformNode(Node):
         super().__init__('final_pid')
         
 
-        self.tf_buffer = Buffer()
-        self.tf_listener = TransformListener(self.tf_buffer, self)
-        self.cmd_pub = self.create_publisher(CarlaEgoVehicleControl, '/carla/hero/vehicle_control_cmd_manual', 10)
+        # self.tf_buffer = Buffer()
+        # self.tf_listener = TransformListener(self.tf_buffer, self)
+        self.trajectory_data: np.ndarray | None = None  # Initialize as None to avoid errors before data is received
+
+        self.cmd_pub = self.create_publisher(CarlaEgoVehicleControl, '/carla/hero/vehicle_control_cmd_manual', 20)
         self.odom_sub = self.create_subscription(Odometry,'/carla/hero/odometry',self.odom_callback,20)
-        self.trajectory_sub = self.create_subscription(String,'trajectory_data',self.trajectory_callback,2)
+        self.trajectory_sub = self.create_subscription(String,'/trajectory_data',self.trajectory_callback,2)
 
         # Initialize variables
-        self.trajectory_data = None
         self.curr_x_pos = 0.0   
         self.curr_y_pos = 0.0
         self.curr_x_vel = 0.0
         self.curr_y_vel = 0.0
         self.flag_reach_initial_x_pos = False
-        self.trajectory_data: np.ndarray | None = None  # Initialize as None to avoid errors before data is received
-
+        self.q : Odometry.pose.pose.orientation | None = None  # Initialize as None to avoid errors before data is received
 
         #Declare parameters with default values
         self.declare_parameter("ctrl_hz", 20.0)
@@ -60,78 +63,198 @@ class OdomTransformNode(Node):
         self.declare_parameter("b_max", 6.0)
 
         #Read parameter values from launch file         
-        self.linear_velocity = self.get_parameter('ctrl_hz').value
+        self.ctrl_hz = self.get_parameter('ctrl_hz').value
         # self.lookahead_sec = self.get_parameter('lookahead_sec').value
         self.kp = self.get_parameter('kp').value
         self.ki = self.get_parameter('ki').value
         self.kd = self.get_parameter('kd').value
         self.a_max = self.get_parameter('a_max').value
         self.b_max = self.get_parameter('b_max').value
-        self.get_to_initial_pos()
-        self.get_pid_control()
+        self.previous_error = 0.0
+        self.target_index = -1
+        
+        # rclpy.spin_once(self, timeout_sec=0.1) # Spin to allow callbacks to process
+        
+        # self.get_pid_control()
 
-    def get_to_initial_pos(self):
-        """
-        Waits until the current x position is close to the initial x position.
-        This is necessary to ensure that the trajectory starts from a known point.
-        """
-
-        # Ensure trajectory data is available
-        while self.flag_reach_initial_x_pos is None:
-            self.get_logger().info("Waiting for trajectory data...")
-            rclpy.spin_once(self, timeout_sec=0.1) # Spin to allow callbacks to process
-
-        # Wait until the current x position is close to the initial x position
-        required_initial_x_pos = self.trajectory_data[0][0]
-        self.get_logger().info(f"Waiting to reach initial x position: {required_initial_x_pos}")
-
-
-        while not self.flag_reach_initial_x_pos and rclpy.ok():
-            rclpy.spin_once(self, timeout_sec=0.1)
-            if self.curr_x_pos>= required_initial_x_pos:
-                self.flag_reach_initial_x_pos = True
-                self.get_logger().info(f"Reached initial x position: {self.curr_x_pos}")
-                break # Break the loop if the initial position is reached
-            # Publish a control command to keep the vehicle moving
-            control_cmd = CarlaEgoVehicleControl()
-            control_cmd.throttle = 0.5  # Adjust throttle as needed
-            control_cmd.brake = 0.0
-            control_cmd.steer = 0.0
-            self.cmd_pub.publish(control_cmd)
-
-
-
-
-    def get_pid_control(self):
-        pass
-            
-
-
-
-
+##############################################  CALLBACKS  ########################################################################
 
     def odom_callback(self, msg: Odometry):
-            # Transform the odometry message to the desired frame
-            self.curr_x_pos = msg.pose.pose.position.x
-            self.curr_y_pos = msg.pose.pose.position.y
-            self.curr_x_vel = msg.twist.twist.linear.x
-            self.curr_y_vel = msg.twist.twist.linear.y
+        # Transform the odometry message to the desired frame
+        self.curr_x_pos = msg.pose.pose.position.x
+        self.curr_y_pos = msg.pose.pose.position.y
+        self.curr_x_vel = msg.twist.twist.linear.x
+        self.get_logger().info(f"X_velocity: {self.curr_x_vel}")
+        self.curr_y_vel = msg.twist.twist.linear.y
+        self.get_logger().info(f"Y_velocity: {self.curr_y_vel}")
+        self.q = msg.pose.pose.orientation
 
     def trajectory_callback(self, msg: String):
         """
         Callback to recieve trajectory data array as a string.
         """
-        self.trajectory_data = np.fromstring(msg.data.strip('[]'), sep=',')
+        list_of_lists = ast.literal_eval(msg.data)
+        # self.get_logger().info(f"List recieved: {list_of_lists}")
+        self.trajectory_data = np.array(list_of_lists, dtype=float)
         # self.get_logger().info(f"Received trajectory data string: {self.trajectory_data}")
-        # Process the trajectory data as needed
-        pass
+        # self.get_logger().info(f"Received trajectory data string: {self.trajectory_data.shape}")
+        # self.get_logger().info(f"Received trajectory data string: {self.trajectory_data[0][4]}")
+        self.get_logger().info("Received trajectory_data string")
+
+
+
+
+
+    @staticmethod    
+    def quaternion_to_yaw(q):
+        # Convert quaternion to yaw
+        siny_cosp = 2.0 * (q.w * q.z + q.x * q.y)
+        cosy_cosp = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
+        return math.atan2(siny_cosp, cosy_cosp)
+    
+    def current_speed(self, x_vel, y_vel):
+        curr_speed = math.sqrt((x_vel)**2 + (y_vel)**2)
+        self.get_logger().info(f"Speed_total: {curr_speed}")
+        return curr_speed
 
     
+    def euclidean_dist(self, x1, x2, y1, y2):
+        dist = math.sqrt((x1-x2)**2 + (y1-y2)**2)
+        self.get_logger().info(f"Distance to target is: {dist}")
+        return dist
+
+    def get_dot(self):              #Returns the dot product of the heading vector and the direction to the target
+        # Wait until the current x position is close to the initial x position
+        required_initial_x_pos = self.trajectory_data[0][0]
+        required_initial_y_pos = self.trajectory_data[0][1]
+
+        dx = required_initial_x_pos - self.curr_x_pos
+        dy = required_initial_y_pos - self.curr_y_pos
+        magnitude = math.hypot(dx, dy)
+        dir_to_target = (dx / magnitude, dy / magnitude)
+
+        # Get yaw
+        yaw = self.quaternion_to_yaw(self.q)
+
+        # Get heading vector from yaw
+        heading = (math.cos(yaw), math.sin(yaw))
+        dot = heading[0] * dir_to_target[0] + heading[1] * dir_to_target[1] # for x and y position 
+        return dot # just sending x dot position coincide and not y
+
+    
+    def get_to_initial_pos(self):
+        """
+        Waits until the current x position is close to the initial x position.
+        This is necessary to ensure that the trajectory starts from a known point.
+        """
+        
+        while self.trajectory_data is None:
+            rclpy.spin_once(self, timeout_sec=0.01)
+            self.get_logger().info(f"Reached 1")
+        while not self.flag_reach_initial_x_pos:
+            dist = self.euclidean_dist(self.curr_x_pos, self.trajectory_data[0][0], self.curr_y_pos, self.trajectory_data[0][1])
+            self.get_logger().info(f"Reached 2")
+            if dist>0.5:
+                self.get_logger().info(f"Is distance>0.5: {dist>0.5}")
+                self.get_logger().info(f"Reached 3")
+                control_cmd = CarlaEgoVehicleControl()
+                control_cmd.throttle = 0.5  # Adjust throttle as needed
+                control_cmd.brake = 0.0
+                control_cmd.steer = 0.0
+                if self.current_speed(self.curr_x_vel, self.curr_y_vel)>5.0:
+                    control_cmd.throttle = 0.0
+                self.get_logger().info(f"Throttle: {control_cmd.throttle}")
+                self.cmd_pub.publish(control_cmd)
+                rclpy.spin_once(self, timeout_sec=1/self.ctrl_hz)
+            else:
+                self.flag_reach_initial_x_pos = True
+                self.get_logger().info(f"Reached location!")
+                self.get_logger().info(f"XPOS: {self.curr_x_pos}")
+
+                break
+
+    '''
+        prev_dist = 99999.0
+
+
+        while not self.flag_reach_initial_x_pos:
+            rclpy.spin_once(self, timeout_sec=0.1)  # Process callbacks
+
+            dot = self.get_dot()  # Get the dot product to check the direction
+            self.get_logger().info(f"Dot product: {dot}")
+
+    '''
+            
+
+
+    '''
+            if dot>0.80 and curr_dist<1 and prev_dist<curr_dist:
+                self.get_logger().info(f"Reached location! Now PID Begins")
+                self.flag_reach_initial_x_pos = True
+                prev_dist = curr_dist
+                break
+
+            elif dot> 0.8 and curr_dist>prev_dist:
+                while True:
+                    control_cmd = CarlaEgoVehicleControl()
+                    control_cmd.throttle = 0.0  # Adjust throttle as needed
+                    control_cmd.brake = 1.0
+                    control_cmd.steer = 0.0
+                    self.cmd_pub.publish(control_cmd)
+
+            else:    
+                control_cmd = CarlaEgoVehicleControl()
+                control_cmd.throttle = 0.5  # Adjust throttle as needed
+                control_cmd.brake = 0.0
+                control_cmd.steer = 0.0
+                self.cmd_pub.publish(control_cmd)
+                prev_dist = curr_dist
+    '''            
+            
+        # self.get_logger().info(f"Target location reached: {self.flag_reach_initial_x_pos}")
+
+
+    def find_nearest_point_index(self):
+        min_dist = float('inf') # Assuming nearest distance as infinite
+        traj_x_pos = self.trajectory_data[:][0]
+        for i in range(traj_x_pos):
+            pass
+
+
+
+
+    def get_pid_control(self):
+        curr_total_speed = self.current_speed(self.curr_x_vel, self.curr_y_vel)
+        self.find_nearest_point_index()
+
+            
+    def complete_brake(self):
+        while True:
+            self.get_logger().info(f"Braking!")
+            control_cmd = control_cmd = CarlaEgoVehicleControl()
+            control_cmd.throttle = 0.0  # Adjust throttle as needed
+            control_cmd.brake = 1.0
+            control_cmd.steer = 0.0
+            rclpy.spin_once(self, timeout_sec=1/self.ctrl_hz)
+
+    def get_pid_control_run(self):
+        self.timer = self.create_timer(1.0 / self.ctrl_hz, self.get_pid_control)
+
+
+
+
 
 
 def main():
     rclpy.init()
     node = OdomTransformNode()
+    node.get_to_initial_pos()
+    node.get_logger().info(f"Now time for PID")
+    node.get_pid_control_run()
+    # node.complete_brake()
+    node.get_logger().info(f"Node shutdown!")
+
+
 
     try:
         rclpy.spin(node)
