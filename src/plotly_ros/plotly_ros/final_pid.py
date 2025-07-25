@@ -56,7 +56,8 @@ class OdomTransformNode(Node):
         #Declare parameters with default values
         self.declare_parameter("ctrl_hz", 20.0)
         # self.declare_parameter("lookahead_sec", LOOKAHEAD_SEC)
-        self.declare_parameter("kp", 0.4)
+        self.declare_parameter("kp_pos", 0.4)
+        self.declare_parameter("kp_vel", 0.4)
         self.declare_parameter("ki", 0.01)
         self.declare_parameter("kd", 0.3)
         self.declare_parameter("a_max", 3.0)
@@ -65,13 +66,19 @@ class OdomTransformNode(Node):
         #Read parameter values from launch file         
         self.ctrl_hz = self.get_parameter('ctrl_hz').value
         # self.lookahead_sec = self.get_parameter('lookahead_sec').value
-        self.kp = self.get_parameter('kp').value
+        self.kp_pos = self.get_parameter('kp_pos').value
+        self.kp_vel = self.get_parameter('kp_vel').value
+
         self.ki = self.get_parameter('ki').value
         self.kd = self.get_parameter('kd').value
         self.a_max = self.get_parameter('a_max').value
         self.b_max = self.get_parameter('b_max').value
-        self.previous_error = 0.0
-        self.target_index = -1
+        self.curr_pos_error = 0.0
+        self.previous_vel_error = 0.0
+        self.curr_vel_error = 0.0 
+        self.previous_target_index = -1
+        self.I_error = 0.0
+        self.is_ascending: bool | None=None
         
         # rclpy.spin_once(self, timeout_sec=0.1) # Spin to allow callbacks to process
         
@@ -118,7 +125,7 @@ class OdomTransformNode(Node):
         return curr_speed
 
     
-    def euclidean_dist(self, x1, x2, y1, y2):
+    def euclidean_distance(self, x1, x2, y1, y2):
         dist = math.sqrt((x1-x2)**2 + (y1-y2)**2)
         self.get_logger().info(f"Distance to target is: {dist}")
         return dist
@@ -139,6 +146,7 @@ class OdomTransformNode(Node):
         # Get heading vector from yaw
         heading = (math.cos(yaw), math.sin(yaw))
         dot = heading[0] * dir_to_target[0] + heading[1] * dir_to_target[1] # for x and y position 
+
         return dot # just sending x dot position coincide and not y
 
     
@@ -152,7 +160,7 @@ class OdomTransformNode(Node):
             rclpy.spin_once(self, timeout_sec=0.01)
             self.get_logger().info(f"Reached 1")
         while not self.flag_reach_initial_x_pos:
-            dist = self.euclidean_dist(self.curr_x_pos, self.trajectory_data[0][0], self.curr_y_pos, self.trajectory_data[0][1])
+            dist = self.euclidean_distance(self.curr_x_pos, self.trajectory_data[0][0], self.curr_y_pos, self.trajectory_data[0][1])
             self.get_logger().info(f"Reached 2")
             if dist>0.5:
                 self.get_logger().info(f"Is distance>0.5: {dist>0.5}")
@@ -214,22 +222,95 @@ class OdomTransformNode(Node):
         # self.get_logger().info(f"Target location reached: {self.flag_reach_initial_x_pos}")
 
 
-    def find_nearest_point_index(self):
-        min_dist = float('inf') # Assuming nearest distance as infinite
-        traj_x_pos = self.trajectory_data[:][0]
-        for i in range(traj_x_pos):
-            pass
+    def find_nearest_point_index(self):     
+        '''
+        Not done for circular trajectory
+        '''
+        # min_dist = float('inf') # Assuming nearest distance as infinite
+        # index = -1
+        # if self.previous_target_index + 1 < self.trajectory_data.shape[0]:
+        #     traj_x_pos = self.trajectory_data[self.previous_target_index+1:][0].tolist()
+        #     traj_y_pos = self.trajectory_data[self.previous_target_index+1:][1].tolist()
+        # for i in range(len(traj_x_pos)):
+        #     d = self.euclidean_distance(self.curr_x_pos, traj_x_pos[i], self.curr_y_pos, traj_y_pos[i])
+        #     if(d<min_dist):
+        #         min_dist = d
+        #         index = i
+        # return index + self.previous_target_index + 1
+
+        traj_x_pos = self.trajectory_data[:, 0]
+        is_ascending = traj_x_pos[0] < traj_x_pos[-1] # Ascending = True, descending = False
+        self.is_ascending = is_ascending
+        # Case: before trajectory
+        if (is_ascending and self.curr_x_pos < traj_x_pos[0]) or (not is_ascending and self.curr_x_pos > traj_x_pos[0]):
+            self.previous_target_index = -1
+            return -1    
+        
+        # Case: after trajectory
+        if (is_ascending and self.curr_x_pos > traj_x_pos[-1]) or (not is_ascending and self.curr_x_pos < traj_x_pos[-1]):
+            self.previous_target_index = -2
+            return -2
+        
+        # Edge case: exactly at the last point
+        if self.curr_x_pos == traj_x_pos[-1]:
+            self.previous_target_index = len(traj_x_pos) - 1
+            return self.previous_target_index        
+        
+        # Case: within bounds
+        for i in range(len(traj_x_pos) - 1):
+            if is_ascending:
+                if traj_x_pos[i] <= self.curr_x_pos < traj_x_pos[i + 1]:
+                    self.previous_target_index = i
+                    return i + 1
+            else:
+                if traj_x_pos[i] >= self.curr_x_pos > traj_x_pos[i + 1]:
+                    self.previous_target_index = i
+                    return i + 1        
+        
+
+    def compute_control_error(self, index):
+        target_index = index
+        dt = 1/self.ctrl_hz
+        if(target_index==-1):
+            target_index = 0
+        sign = 1.0 if self.is_ascending else -1.0
+        self.curr_pos_error = sign * (self.trajectory_data[target_index][0] - self.curr_x_pos)
+        self.curr_vel_error = self.current_speed(self.trajectory_data[target_index][2], self.trajectory_data[target_index][3]) - self.current_speed(self.curr_x_vel, self.curr_y_vel)
+        self.I_error += self.curr_vel_error * dt
+        D_error = (self.curr_vel_error - self.previous_vel_error)/dt
+        self.previous_vel_error = self.curr_vel_error
+        control_signal = self.kp_pos * self.curr_pos_error + self.kp_vel * self.curr_vel_error + self.ki * self.I_error + self.kd * D_error
+        control_cmd = CarlaEgoVehicleControl()
+        if control_signal>0:
+            control_cmd.throttle = min(control_signal, 1.0)
+            control_cmd.brake = 0.0
+        else:
+            control_cmd.throttle = 0.0
+            control_cmd.brake = min(-control_signal, 1.0)
+        control_cmd.steer    = 0.0
+        control_cmd.gear     = 1
+        self.cmd_pub.publish(control_cmd)
+        
+
+
 
 
 
 
     def get_pid_control(self):
         curr_total_speed = self.current_speed(self.curr_x_vel, self.curr_y_vel)
-        self.find_nearest_point_index()
+        target_index = self.find_nearest_point_index()
+        if target_index == -2:
+            self.complete_brake()
+        elif target_index == self.trajectory_data.shape[0]-1:
+            self.complete_brake()
+
+        self.compute_control_error(target_index)
+        
 
             
     def complete_brake(self):
-        while True:
+        while not (self.current_speed(self.curr_x_vel, self.curr_y_vel) == 0.0):
             self.get_logger().info(f"Braking!")
             control_cmd = control_cmd = CarlaEgoVehicleControl()
             control_cmd.throttle = 0.0  # Adjust throttle as needed
@@ -239,6 +320,7 @@ class OdomTransformNode(Node):
 
     def get_pid_control_run(self):
         self.timer = self.create_timer(1.0 / self.ctrl_hz, self.get_pid_control)
+        self.complete_brake()
 
 
 
