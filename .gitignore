@@ -104,3 +104,8 @@ log/latest_build
 src/plotly_ros/plotly_ros/CSV/pid_merged.csv
 src/plotly_ros/plotly_ros/rosbag2_2025_07_25-16_48_11/metadata.yaml
 src/plotly_ros/plotly_ros/rosbag2_2025_07_25-16_48_11/rosbag2_2025_07_25-16_48_11_0.db3
+src/plotly_ros/plotly_ros/__pycache__/final_pid.cpython-310.pyc
+src/plotly_ros/plotly_ros/rosbag2_2025_07_26-00_38_56/metadata.yaml
+src/plotly_ros/plotly_ros/rosbag2_2025_07_26-00_38_56/rosbag2_2025_07_26-00_38_56_0.db3
+src/plotly_ros/plotly_ros/rosbag2_2025_07_26-00_43_17/metadata.yaml
+src/plotly_ros/plotly_ros/rosbag2_2025_07_26-00_43_17/rosbag2_2025_07_26-00_43_17_0.db3

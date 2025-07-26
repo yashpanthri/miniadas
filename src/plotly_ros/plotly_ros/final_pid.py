@@ -27,11 +27,7 @@ _BASE = Path("/home/yashpanthri-unbuntu22/CARLA_PROJECT/mini_adas/src/plotly_ros
 TRAJ_CSV = _BASE / "odometry_x_pos_and_vel.csv" # reference trajectory CSV
 PID_LOG  = _BASE / "pid_trajectory_log.csv" # log file for PID controller
 
-# # ─── Hyper-parameters ───────────────────────────────────────────────────
-# CTRL_HZ          = 20.0          # main control loop rate   [Hz]
-# LOOKAHEAD_SEC    = 1.0 / CTRL_HZ # preview horizon (one step)
-# KP, KI, KD       = 0.4, 0.01, 0.3 # PID gains   (tune!)
-# A_MAX, B_MAX     =  3.0,  6.0    # full-throttle / full-brake accel [m s⁻²]
+
 
 class OdomTransformNode(Node):
     def __init__(self):
@@ -66,26 +62,31 @@ class OdomTransformNode(Node):
         self.declare_parameter("kd", 0.3)
         self.declare_parameter("a_max", 3.0)
         self.declare_parameter("b_max", 6.0)
+        self.declare_parameter("lookahead_distance", 5.0)
 
         #Read parameter values from launch file         
         self.ctrl_hz = self.get_parameter('ctrl_hz').value
         # self.lookahead_sec = self.get_parameter('lookahead_sec').value
         self.kp_pos = self.get_parameter('kp_pos').value
         self.kp_vel = self.get_parameter('kp_vel').value
+        self.lookahead_distance = self.get_parameter('lookahead_distance').value
 
         self.ki = self.get_parameter('ki').value
         self.kd = self.get_parameter('kd').value
         self.a_max = self.get_parameter('a_max').value
         self.b_max = self.get_parameter('b_max').value
+
         self.curr_pos_error = 0.0
         self.previous_vel_error = 0.0
         self.curr_vel_error = 0.0 
         self.previous_target_index = -1
         self.I_error = 0.0
-        self.is_ascending: bool | None=None
+        self.is_ascending: bool | None=None        # rclpy.spin_once(self, timeout_sec=0.1) # Spin to allow callbacks to process
+        self.previous_target_index = 0
+        self.heading_error = 0.0
         
-        # rclpy.spin_once(self, timeout_sec=0.1) # Spin to allow callbacks to process
-        
+        # Braking state
+        self.is_braking = False
         # self.get_pid_control()
 
 ##############################################  CALLBACKS  ########################################################################
@@ -95,9 +96,10 @@ class OdomTransformNode(Node):
         self.curr_x_pos = msg.pose.pose.position.x
         self.curr_y_pos = msg.pose.pose.position.y
         self.curr_x_vel = msg.twist.twist.linear.x
-        self.get_logger().info(f"X_velocity: {self.curr_x_vel}")
+        # Remove excessive logging - only log occasionally
+        # self.get_logger().info(f"X_velocity: {self.curr_x_vel}")
         self.curr_y_vel = msg.twist.twist.linear.y
-        self.get_logger().info(f"Y_velocity: {self.curr_y_vel}")
+        # self.get_logger().info(f"Y_velocity: {self.curr_y_vel}")
         self.q = msg.pose.pose.orientation
         
 
@@ -124,15 +126,34 @@ class OdomTransformNode(Node):
         cosy_cosp = 1.0 - 2.0 * (q.y * q.y + q.z * q.z)
         return math.atan2(siny_cosp, cosy_cosp)
     
+    def get_path_direction(self):
+        """
+        Determine the overall direction of the trajectory
+        Returns: path angle in radians
+        """
+        if len(self.trajectory_data) < 2:
+            return 0.0
+        
+        # Calculate overall path direction from start to end
+        start_x = self.trajectory_data[0][0]
+        end_x = self.trajectory_data[-1][0]
+        start_y = self.trajectory_data[0][1]
+        end_y = self.trajectory_data[-1][1]
+        
+        # Calculate path angle using atan2
+        path_angle = math.atan2(end_y - start_y, end_x - start_x)
+        
+        return path_angle
+    
     def current_speed(self, x_vel, y_vel):
         curr_speed = math.sqrt((x_vel)**2 + (y_vel)**2)
-        self.get_logger().info(f"Speed_total: {curr_speed}")
+        # self.get_logger().info(f"Speed_total: {curr_speed}")
         return curr_speed
 
     
     def euclidean_distance(self, x1, x2, y1, y2):
         dist = math.sqrt((x1-x2)**2 + (y1-y2)**2)
-        self.get_logger().info(f"Distance to target is: {dist}")
+        # self.get_logger().info(f"Distance to target is: {dist}")
         return dist
 
     def get_dot(self):              #Returns the dot product of the heading vector and the direction to the target
@@ -165,7 +186,7 @@ class OdomTransformNode(Node):
             rclpy.spin_once(self, timeout_sec=0.01)
             self.get_logger().info(f"Reached 1")
         while not self.flag_reach_initial_x_pos:
-            dist = self.euclidean_distance(self.curr_x_pos, self.trajectory_data[0][0], self.curr_y_pos, self.trajectory_data[0][1])
+            dist = self.euclidean_distance(self.curr_x_pos, self.trajectory_data[self.previous_target_index][0], self.curr_y_pos, self.trajectory_data[self.previous_target_index][1])
             self.get_logger().info(f"Reached 2")
             if dist>0.5:
                 self.get_logger().info(f"Is distance>0.5: {dist>0.5}")
@@ -186,101 +207,70 @@ class OdomTransformNode(Node):
 
                 break
 
-    '''
-        prev_dist = 99999.0
 
 
-        while not self.flag_reach_initial_x_pos:
-            rclpy.spin_once(self, timeout_sec=0.1)  # Process callbacks
+    def find_lookahead_target(self):
+        """
+        Find the target point at lookahead_distance ahead of the vehicle
+        """
+        min_distance_diff = float('inf')
+        target_index = self.previous_target_index
+        found_ahead = False  # Flag to check if a point ahead is found
 
-            dot = self.get_dot()  # Get the dot product to check the direction
-            self.get_logger().info(f"Dot product: {dot}")
-
-    '''
-            
-
-
-    '''
-            if dot>0.80 and curr_dist<1 and prev_dist<curr_dist:
-                self.get_logger().info(f"Reached location! Now PID Begins")
-                self.flag_reach_initial_x_pos = True
-                prev_dist = curr_dist
-                break
-
-            elif dot> 0.8 and curr_dist>prev_dist:
-                while True:
-                    control_cmd = CarlaEgoVehicleControl()
-                    control_cmd.throttle = 0.0  # Adjust throttle as needed
-                    control_cmd.brake = 1.0
-                    control_cmd.steer = 0.0
-                    self.cmd_pub.publish(control_cmd)
-
-            else:    
-                control_cmd = CarlaEgoVehicleControl()
-                control_cmd.throttle = 0.5  # Adjust throttle as needed
-                control_cmd.brake = 0.0
-                control_cmd.steer = 0.0
-                self.cmd_pub.publish(control_cmd)
-                prev_dist = curr_dist
-    '''            
-            
-        # self.get_logger().info(f"Target location reached: {self.flag_reach_initial_x_pos}")
-
-
-    def find_nearest_point_index(self):     
-        '''
-        Not done for circular trajectory
-        '''
-        # min_dist = float('inf') # Assuming nearest distance as infinite
-        # index = -1
-        # if self.previous_target_index + 1 < self.trajectory_data.shape[0]:
-        #     traj_x_pos = self.trajectory_data[self.previous_target_index+1:][0].tolist()
-        #     traj_y_pos = self.trajectory_data[self.previous_target_index+1:][1].tolist()
-        # for i in range(len(traj_x_pos)):
-        #     d = self.euclidean_distance(self.curr_x_pos, traj_x_pos[i], self.curr_y_pos, traj_y_pos[i])
-        #     if(d<min_dist):
-        #         min_dist = d
-        #         index = i
-        # return index + self.previous_target_index + 1
-
-        traj_x_pos = self.trajectory_data[:, 0]
-        is_ascending = traj_x_pos[0] < traj_x_pos[-1] # Ascending = True, descending = False
-        self.is_ascending = is_ascending
-        # Case: before trajectory
-        if (is_ascending and self.curr_x_pos < traj_x_pos[0]) or (not is_ascending and self.curr_x_pos > traj_x_pos[0]):
-            self.previous_target_index = -1
-            return -1    
+        # Get vehicle heading
+        vehicle_heading_angle = self.quaternion_to_yaw(self.q)
         
-        # Case: after trajectory
-        if (is_ascending and self.curr_x_pos > traj_x_pos[-1]) or (not is_ascending and self.curr_x_pos < traj_x_pos[-1]):
-            self.previous_target_index = -2
-            return -2
+
+
+        for i in range(self.previous_target_index, len(self.trajectory_data)): #len(self.trajectory_data) is the number of rows in the trajectory data
+            distance = self.euclidean_distance(self.curr_x_pos, self.trajectory_data[i][0], self.curr_y_pos, self.trajectory_data[i][1])
+            # Calculate angle from vehicle to this trajectory point using atan2
+            dx = self.trajectory_data[i][0] - self.curr_x_pos
+            dy = self.trajectory_data[i][1] - self.curr_y_pos
+            target_point_angle = math.atan2(dy, dx)
+            angle_diff_abs = abs(target_point_angle - vehicle_heading_angle)
+            is_forward = angle_diff_abs < math.pi/2
+            distance_diff = abs(distance - self.lookahead_distance)
+            if distance_diff < min_distance_diff and distance > self.lookahead_distance and True:
+                min_distance_diff = distance_diff
+                target_index = i
+                found_ahead = True  # Marked:Found a point ahead
         
-        # Edge case: exactly at the last point
-        if self.curr_x_pos == traj_x_pos[-1]:
-            self.previous_target_index = len(traj_x_pos) - 1
-            return self.previous_target_index        
+        # If no point ahead found, use the last point
+        if not found_ahead:
+            target_index = len(self.trajectory_data) - 1
         
-        # Case: within bounds
-        for i in range(len(traj_x_pos) - 1):
-            if is_ascending:
-                if traj_x_pos[i] <= self.curr_x_pos < traj_x_pos[i + 1]:
-                    self.previous_target_index = i
-                    return i + 1
-            else:
-                if traj_x_pos[i] >= self.curr_x_pos > traj_x_pos[i + 1]:
-                    self.previous_target_index = i
-                    return i + 1        
+        if target_index >= len(self.trajectory_data) - 1:
+            return len(self.trajectory_data) - 1
         
+        # Debug logging
+        if found_ahead:
+            self.get_logger().info(f"Found lookahead target: {target_index}, distance: {self.lookahead_distance:.2f}m")
+        else:
+            self.get_logger().info(f"No point ahead found, using last point: {target_index}")
+
+        return target_index
+
 
     def compute_control_error(self, index):
         target_index = index
         dt = 1/self.ctrl_hz
+        
         if(target_index==-1):
             target_index = 0
+        
+        # 2D position error
+        target_x = self.trajectory_data[target_index][0]
+        target_y = self.trajectory_data[target_index][1]
+        # 2D Euclidean distance error
+        self.curr_pos_error = math.sqrt((target_x - self.curr_x_pos)**2 + (target_y - self.curr_y_pos)**2)  # 2D DISTANCE
+
+        '''
         sign = 1.0 if self.is_ascending else -1.0
         self.curr_pos_error = sign * (self.trajectory_data[target_index][0] - self.curr_x_pos)
         self.curr_vel_error = self.current_speed(self.trajectory_data[target_index][2], self.trajectory_data[target_index][3]) - self.current_speed(self.curr_x_vel, self.curr_y_vel)
+        '''  
+        self.curr_vel_error = self.current_speed(self.trajectory_data[target_index][2], self.trajectory_data[target_index][3]) - self.current_speed(self.curr_x_vel, self.curr_y_vel)      
         self.I_error += self.curr_vel_error * dt
         D_error = (self.curr_vel_error - self.previous_vel_error)/dt
         self.previous_vel_error = self.curr_vel_error
@@ -294,38 +284,86 @@ class OdomTransformNode(Node):
             control_cmd.brake = min(-control_signal, 1.0)
         control_cmd.steer    = 0.0
         control_cmd.gear     = 1
-        self.cmd_pub.publish(control_cmd)
+
         
+        # Calculate heading error for future steering control
+        dx = target_x - self.curr_x_pos
+        dy = target_y - self.curr_y_pos
+        target_angle = math.atan2(dy, dx)
+        vehicle_heading = self.quaternion_to_yaw(self.q)
+        heading_error = target_angle - vehicle_heading
 
+        # Normalize heading error to [-π, π]
+        while heading_error > math.pi:
+            heading_error -= 2 * math.pi
+        while heading_error < -math.pi:
+            heading_error += 2 * math.pi
 
-
-
+        # Store heading error for future use
+        self.heading_error = heading_error
+        self.cmd_pub.publish(control_cmd)
+        # Log heading error for debugging
+        self.get_logger().info(f"Heading error: {math.degrees(heading_error):.1f}°")
 
 
     def get_pid_control(self):
+        # Debug: Show that PID control is being called
+        self.get_logger().info("PID control function called by timer")
+        
+        # Calculate current speed
         curr_total_speed = self.current_speed(self.curr_x_vel, self.curr_y_vel)
-        target_index = self.find_nearest_point_index()
-        if target_index == -2:
-            self.complete_brake()
-        elif target_index == self.trajectory_data.shape[0]-1:
-            self.complete_brake()
 
-        self.compute_control_error(target_index)
+        # If already braking, continue braking
+        if self.is_braking:
+            self.complete_brake()
+            return
+
+        target_index = self.find_lookahead_target()
+        
+        # Update previous target index for next iteration
+        self.previous_target_index = target_index
+        
+        # Check if we've reached the end of trajectory
+        if target_index >= len(self.trajectory_data) - 1:
+            self.get_logger().info("Reached end of trajectory, initiating brake")
+            self.is_braking = True
+            self.complete_brake()
+            return
+        else:
+            self.compute_control_error(target_index)
         
 
             
     def complete_brake(self):
-        while not (self.current_speed(self.curr_x_vel, self.curr_y_vel) == 0.0):
-            self.get_logger().info(f"Braking!")
-            control_cmd = control_cmd = CarlaEgoVehicleControl()
-            control_cmd.throttle = 0.0  # Adjust throttle as needed
-            control_cmd.brake = 1.0
-            control_cmd.steer = 0.0
-            # rclpy.spin_once(self, timeout_sec=1/self.ctrl_hz)
+        """
+        Continuously apply brakes until vehicle comes to a complete stop
+        """
+        # Create brake command
+        control_cmd = CarlaEgoVehicleControl()
+        control_cmd.throttle = 0.0
+        control_cmd.brake = 1.0
+        control_cmd.steer = 0.0
+        control_cmd.gear = 1
+        
+        # Publish brake command
+        self.cmd_pub.publish(control_cmd)
+        
+        # Log current speed
+        current_speed = self.current_speed(self.curr_x_vel, self.curr_y_vel)
+        self.get_logger().info(f"Braking! Current speed: {current_speed:.2f} m/s")
+        
+        # Check if vehicle has stopped
+        if current_speed < 0.1:  # Consider stopped if speed < 0.1 m/s
+            self.get_logger().info("Vehicle has come to a complete stop!")
+            # Stop the timer to prevent further control commands
+            if hasattr(self, 'timer'):
+                self.timer.cancel()
+                self.get_logger().info("PID timer stopped - vehicle stopped successfully")
 
     def get_pid_control_run(self):
         self.timer = self.create_timer(1.0 / self.ctrl_hz, self.get_pid_control)
-        self.complete_brake()
+        # Remove the self.complete_brake() call - it was preventing the timer from running
+        self.get_logger().info(f"PID timer created with frequency: {self.ctrl_hz} Hz")
 
 
 
