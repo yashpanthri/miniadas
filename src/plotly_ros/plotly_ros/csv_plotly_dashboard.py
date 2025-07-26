@@ -20,9 +20,9 @@ Features:
 
 import pandas as pd
 import plotly.graph_objects as go
-from plotly.subplots import make_subplots # for subplots
-from dash import Dash, dcc, html, Input, Output # for dash app
-import os # for file path
+from plotly.subplots import make_subplots
+from dash import Dash, dcc, html, Input, Output
+import os
 
 # --- Data Loading and Preprocessing ---
 
@@ -32,8 +32,8 @@ def preprocess_data(filepath):
         df = pd.read_csv(filepath)
         # Convert timestamp to seconds and set as index
         df['time_sec'] = df['timestamp_ns'] / 1e9
-        # Interpolate missing values for better data quality
-        df = df.interpolate(method='linear', limit_direction='both')
+        # Forward-fill to handle NaNs from different sensor rates
+        df.ffill(inplace=True)
         # Drop rows where essential data is still missing (especially at the beginning)
         df.dropna(subset=['odom.pos.x', 'speed', 'gnss.latitude', 'imu.linear.x'], inplace=True)
         
@@ -46,70 +46,52 @@ def preprocess_data(filepath):
         ])
 
 def align_datasets_by_position(carla_df, pid_df):
-    """Align datasets by finding the PID timestamp that corresponds to the first CARLA X position after movement starts."""
+    """Align datasets by finding the best matching X positions and adjusting time accordingly."""
     if carla_df.empty or pid_df.empty:
         print("Warning: One or both datasets are empty. Cannot perform alignment.")
         return carla_df, pid_df
     
-    print("Performing position-based time alignment using movement start...")
+    print("Performing position-based time alignment...")
     
-    # Find the start of movement in CARLA data (when X acceleration becomes non-zero)
-    # Use a small threshold to detect movement
-    acceleration_threshold = 0.01  # m/s²
+    # Get the range of X positions that overlap between both datasets
+    carla_x_min, carla_x_max = carla_df['odom.pos.x'].min(), carla_df['odom.pos.x'].max()
+    pid_x_min, pid_x_max = pid_df['odom.pos.x'].min(), pid_df['odom.pos.x'].max()
     
-    # Find first non-zero X acceleration
-    movement_start_idx = None
-    for i in range(len(carla_df)):
-        if abs(carla_df['imu.linear.x'].iloc[i]) > acceleration_threshold:
-            movement_start_idx = i
-            break
+    print(f"CARLA X range: {carla_x_min:.2f} to {carla_x_max:.2f}")
+    print(f"PID X range: {pid_x_min:.2f} to {pid_x_max:.2f}")
     
-    if movement_start_idx is None:
-        print("Warning: No movement detected in CARLA data. Using first position.")
-        movement_start_idx = 0
+    # Find overlapping X range
+    overlap_min = max(carla_x_min, pid_x_min)
+    overlap_max = min(carla_x_max, pid_x_max)
     
-    # Get the CARLA position at movement start
-    carla_start_x = carla_df['odom.pos.x'].iloc[movement_start_idx]
-    carla_start_time = carla_df['time_sec'].iloc[movement_start_idx]
-    carla_start_accel = carla_df['imu.linear.x'].iloc[movement_start_idx]
+    if overlap_min >= overlap_max:
+        print("Warning: No overlapping X positions found. Using simple time alignment.")
+        # Fallback to simple time alignment
+        carla_df['time_sec'] = carla_df['time_sec'] - carla_df['time_sec'].min()
+        pid_df['time_sec'] = pid_df['time_sec'] - pid_df['time_sec'].min()
+        return carla_df, pid_df
     
-    print(f"CARLA movement start: X={carla_start_x:.2f}, Time={carla_start_time:.2f}, Accel={carla_start_accel:.3f} m/s²")
+    print(f"Overlapping X range: {overlap_min:.2f} to {overlap_max:.2f}")
     
-    # Truncate CARLA data to start from movement
-    carla_df = carla_df.iloc[movement_start_idx:].reset_index(drop=True)
-    print(f"CARLA data truncated: now starts from index {movement_start_idx}, {len(carla_df)} points remaining")
+    # Find a reference X position in the middle of the overlap
+    reference_x = (overlap_min + overlap_max) / 2
+    print(f"Reference X position: {reference_x:.2f}")
     
-    # Find PID positions that are same as or just before the CARLA movement start position
-    # First, find exact matches
-    exact_matches = pid_df[pid_df['odom.pos.x'] == carla_start_x]
+    # Find the closest X positions in both datasets
+    carla_closest_idx = (carla_df['odom.pos.x'] - reference_x).abs().idxmin()
+    pid_closest_idx = (pid_df['odom.pos.x'] - reference_x).abs().idxmin()
     
-    if not exact_matches.empty:
-        # Use the first exact match
-        pid_match_idx = exact_matches.index[0]
-        pid_match_x = exact_matches['odom.pos.x'].iloc[0]
-        pid_match_time = exact_matches['time_sec'].iloc[0]
-        match_type = "exact"
-    else:
-        # Find positions just before the CARLA movement start position
-        positions_before = pid_df[pid_df['odom.pos.x'] <= carla_start_x]
-        
-        if not positions_before.empty:
-            # Use the closest position that is <= CARLA movement start X
-            pid_match_idx = positions_before['odom.pos.x'].idxmax()
-            pid_match_x = pid_df.loc[pid_match_idx, 'odom.pos.x']
-            pid_match_time = pid_df.loc[pid_match_idx, 'time_sec']
-            match_type = "before"
-        else:
-            # If no positions before, use the first PID position
-            pid_match_idx = pid_df.index[0]
-            pid_match_x = pid_df['odom.pos.x'].iloc[0]
-            pid_match_time = pid_df['time_sec'].iloc[0]
-            match_type = "first"
+    carla_ref_time = carla_df.loc[carla_closest_idx, 'time_sec']
+    pid_ref_time = pid_df.loc[pid_closest_idx, 'time_sec']
     
-    print(f"PID match: X={pid_match_x:.2f}, Time={pid_match_time:.2f} ({match_type} match)")
+    carla_ref_x = carla_df.loc[carla_closest_idx, 'odom.pos.x']
+    pid_ref_x = pid_df.loc[pid_closest_idx, 'odom.pos.x']
+    
+    print(f"CARLA reference: X={carla_ref_x:.2f}, Time={carla_ref_time:.2f}")
+    print(f"PID reference: X={pid_ref_x:.2f}, Time={pid_ref_time:.2f}")
     
     # Calculate time offset to align at the reference position
-    time_offset = carla_start_time - pid_match_time
+    time_offset = carla_ref_time - pid_ref_time
     print(f"Time offset to align: {time_offset:.2f}s")
     
     # Apply the time offset to PID data
