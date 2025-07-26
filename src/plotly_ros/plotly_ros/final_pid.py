@@ -56,9 +56,9 @@ class OdomTransformNode(Node):
         #Declare parameters with default values
         self.declare_parameter("ctrl_hz", 20.0)
         # self.declare_parameter("lookahead_sec", LOOKAHEAD_SEC)
-        self.declare_parameter("kp_pos", 0.08) # Began with 0.4, 10.0
-        self.declare_parameter("kp_vel", 4.0) # Began with 0.4, 2.0
-        self.declare_parameter("ki", 0.28) # Began with 0.01, 0.01
+        self.declare_parameter("kp_pos", 0.05) # Began with 0.4, 10.0
+        self.declare_parameter("kp_vel", 6.0) # Began with 0.4, 2.0
+        self.declare_parameter("ki", 0.5) # Began with 0.01, 0.01
         self.declare_parameter("kd", 0.5) # Began with 0.3, 0.1
         # self.declare_parameter("a_max", 3.0)
         # self.declare_parameter("b_max", 6.0)
