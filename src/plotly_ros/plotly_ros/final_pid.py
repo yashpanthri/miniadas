@@ -63,6 +63,12 @@ class OdomTransformNode(Node):
         # self.declare_parameter("a_max", 3.0)
         # self.declare_parameter("b_max", 6.0)
         self.declare_parameter("lookahead_distance", 15.0) # Began with 5.0
+        
+        # Pure pursuit steering parameters
+        self.declare_parameter("wheelbase", 2.875) # CARLA vehicle wheelbase in meters
+        self.declare_parameter("k0", 1.0) # Base look-ahead distance in meters
+        self.declare_parameter("kv", 0.2) # Speed gain for adaptive look-ahead
+        self.declare_parameter("max_steering_angle", 1.39) # Max steering angle in radians (~70 degrees)
 
         #Read parameter values from launch file         
         self.ctrl_hz = self.get_parameter('ctrl_hz').value
@@ -75,6 +81,12 @@ class OdomTransformNode(Node):
         self.kd = self.get_parameter('kd').value
         # self.a_max = self.get_parameter('a_max').value
         # self.b_max = self.get_parameter('b_max').value
+        
+        # Pure pursuit parameters
+        self.wheelbase = self.get_parameter('wheelbase').value
+        self.k0 = self.get_parameter('k0').value
+        self.kv = self.get_parameter('kv').value
+        self.max_steering_angle = self.get_parameter('max_steering_angle').value
 
         self.curr_pos_error = 0.0
         self.previous_vel_error = 0.0
@@ -213,6 +225,9 @@ class OdomTransformNode(Node):
         """
         Find the target point at lookahead_distance ahead of the vehicle
         """
+        # Update lookahead distance based on current speed
+        self.update_lookahead_distance()
+        
         min_distance_diff = float('inf')
         target_index = self.previous_target_index
         found_ahead = False  # Flag to check if a point ahead is found
@@ -245,11 +260,44 @@ class OdomTransformNode(Node):
         
         # Debug logging
         if found_ahead:
-            self.get_logger().info(f"Found lookahead target: {target_index}, distance: {self.lookahead_distance:.2f}m")
+            self.get_logger().info(f"Found lookahead target: {target_index}, adaptive distance: {self.lookahead_distance:.2f}m")
         else:
-            self.get_logger().info(f"No point ahead found, using last point: {target_index}")
+            self.get_logger().info(f"No point ahead found, using last point: {target_index}, adaptive distance: {self.lookahead_distance:.2f}m")
 
         return target_index
+
+    def update_lookahead_distance(self):
+        """
+        Update the look-ahead distance based on the current speed
+        """
+        current_speed = self.current_speed(self.curr_x_vel, self.curr_y_vel)
+        old_lookahead = self.lookahead_distance
+        self.lookahead_distance = self.k0 + self.kv * current_speed
+        self.get_logger().info(f"Lookahead distance: {self.lookahead_distance:.1f}m")
+        
+        # Debug logging (only log significant changes to avoid spam)
+        if abs(old_lookahead - self.lookahead_distance) > 0.2:
+            self.get_logger().info(f"Adaptive lookahead: {old_lookahead:.1f}m -> {self.lookahead_distance:.1f}m (speed: {current_speed:.1f}m/s)")
+
+    def pure_pursuit_steering(self, target_index, heading_error):
+        """
+        Calculate steering angle using pure pursuit algorithm
+        """
+        if target_index >= len(self.trajectory_data): # If target index is greater than or equal to the length of the trajectory data, return 0.0 as it is time for braking
+            return 0.0
+
+            
+        # 4) Calculate curvature
+        kappa = 2.0 * math.sin(heading_error) / self.lookahead_distance
+        
+        # 5) Calculate steering angle using bicycle model
+        delta = math.atan(self.wheelbase * kappa)
+        
+        # 6) Normalize for CARLA control message
+        delta_norm = max(-1.0, min(delta / self.max_steering_angle, 1.0))
+        self.get_logger().info(f"Steering angle: {delta_norm:.3f}")
+        
+        return delta_norm
 
 
     def compute_control_error(self, index):
@@ -294,7 +342,7 @@ class OdomTransformNode(Node):
         dy = target_y - self.curr_y_pos
         target_angle = math.atan2(dy, dx)
         vehicle_heading = self.quaternion_to_yaw(self.q)
-        heading_error = target_angle - vehicle_heading
+        heading_error = vehicle_heading - target_angle
 
         # Normalize heading error to [-π, π]
         while heading_error > math.pi:
@@ -304,9 +352,15 @@ class OdomTransformNode(Node):
 
         # Store heading error for future use
         self.heading_error = heading_error
+        
+        # Calculate steering using pure pursuit
+        steering_angle = self.pure_pursuit_steering(target_index, heading_error)
+        control_cmd.steer = steering_angle
+        self.get_logger().info(f"Steering angle: {steering_angle:.3f}")
+        
         self.cmd_pub.publish(control_cmd)
         # Log heading error for debugging
-        self.get_logger().info(f"Heading error: {math.degrees(heading_error):.1f}°")
+        self.get_logger().info(f"Heading error: {math.degrees(heading_error):.1f}°, Steering: {steering_angle:.3f}")
 
 
     def get_pid_control(self):
@@ -345,7 +399,7 @@ class OdomTransformNode(Node):
         control_cmd = CarlaEgoVehicleControl()
         control_cmd.throttle = 0.0
         control_cmd.brake = 1.0
-        control_cmd.steer = 0.0
+        control_cmd.steer = 0.0  # Keep steering straight during braking
         control_cmd.gear = 1
         
         # Publish brake command
