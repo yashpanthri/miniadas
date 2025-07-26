@@ -21,6 +21,7 @@ import math
 import ast
 
 
+
 # ─── File locations ─────────────────────────────────────────────────────
 _BASE = Path("/home/yashpanthri-unbuntu22/CARLA_PROJECT/mini_adas/src/plotly_ros/plotly_ros") # base directory
 TRAJ_CSV = _BASE / "odometry_x_pos_and_vel.csv" # reference trajectory CSV
@@ -35,15 +36,18 @@ PID_LOG  = _BASE / "pid_trajectory_log.csv" # log file for PID controller
 class OdomTransformNode(Node):
     def __init__(self):
         super().__init__('final_pid')
-        
+        self
 
         # self.tf_buffer = Buffer()
         # self.tf_listener = TransformListener(self.tf_buffer, self)
         self.trajectory_data: np.ndarray | None = None  # Initialize as None to avoid errors before data is received
-
+        
+        # Publisher/Subscriber objects
         self.cmd_pub = self.create_publisher(CarlaEgoVehicleControl, '/carla/hero/vehicle_control_cmd_manual', 20)
         self.odom_sub = self.create_subscription(Odometry,'/carla/hero/odometry',self.odom_callback,20)
         self.trajectory_sub = self.create_subscription(String,'/trajectory_data',self.trajectory_callback,2)
+        # self.sim_dashboard_odom_pub = self.create_publisher(Odometry, '/sim_odom_data', 20)
+        # self.sim_dashboard_control_pub = self.create_publisher(CarlaEgoVehicleControl, '/sim_control_data', 20)
 
         # Initialize variables
         self.curr_x_pos = 0.0   
@@ -95,6 +99,7 @@ class OdomTransformNode(Node):
         self.curr_y_vel = msg.twist.twist.linear.y
         self.get_logger().info(f"Y_velocity: {self.curr_y_vel}")
         self.q = msg.pose.pose.orientation
+        
 
     def trajectory_callback(self, msg: String):
         """
@@ -316,7 +321,7 @@ class OdomTransformNode(Node):
             control_cmd.throttle = 0.0  # Adjust throttle as needed
             control_cmd.brake = 1.0
             control_cmd.steer = 0.0
-            rclpy.spin_once(self, timeout_sec=1/self.ctrl_hz)
+            # rclpy.spin_once(self, timeout_sec=1/self.ctrl_hz)
 
     def get_pid_control_run(self):
         self.timer = self.create_timer(1.0 / self.ctrl_hz, self.get_pid_control)

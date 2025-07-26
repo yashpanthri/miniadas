@@ -101,3 +101,6 @@ build/plotly_ros/plotly_ros.egg-info/SOURCES.txt
 build/plotly_ros/prefix_override/__pycache__/sitecustomize.cpython-310.pyc
 build/*
 log/latest_build
+src/plotly_ros/plotly_ros/CSV/pid_merged.csv
+src/plotly_ros/plotly_ros/rosbag2_2025_07_25-16_48_11/metadata.yaml
+src/plotly_ros/plotly_ros/rosbag2_2025_07_25-16_48_11/rosbag2_2025_07_25-16_48_11_0.db3

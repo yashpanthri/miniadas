@@ -5,7 +5,9 @@ from rosidl_runtime_py.utilities import get_message
 import pandas as pd
 
 # === SETTINGS ===
-bag_path = '/home/yashpanthri-unbuntu22/CARLA_PROJECT/mini_adas/src/plotly_ros/plotly_ros/rosbag2_2025_07_16-07_06_16'  # <-- Change this to your bag folder path
+# bag_path = '/home/yashpanthri-unbuntu22/CARLA_PROJECT/mini_adas/src/plotly_ros/plotly_ros/rosbag2_2025_07_16-07_06_16'  # <-- Change this to your bag folder path
+bag_path = '/home/yashpanthri-unbuntu22/CARLA_PROJECT/mini_adas/src/plotly_ros/plotly_ros/rosbag2_2025_07_25-16_48_11' # ros2 sim data
+
 topics_to_extract = [
     "/carla/hero/speedometer",
     "/carla/hero/imu",
@@ -113,9 +115,10 @@ for topic, records in data_dict.items():
 
 # === Merge and Save ===
 merged = pd.concat(dfs, axis=1).sort_index().reset_index()
-merged.to_csv("carla_merged_data.csv", index=False)
-
-print(f"\nMerged CSV saved: carla_merged_data.csv")
+# merged.to_csv("carla_merged_data.csv", index=False)
+merged.to_csv("/home/yashpanthri-unbuntu22/CARLA_PROJECT/mini_adas/src/plotly_ros/plotly_ros/CSV/pid_merged.csv", index=False)
+# print(f"\nMerged CSV saved: carla_merged_data.csv")
+print(f"\nMerged CSV saved: pid_merged.csv")
 
 # === Shutdown ROS ===
 rclpy.shutdown()

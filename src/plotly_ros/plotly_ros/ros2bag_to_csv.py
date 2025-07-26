@@ -51,8 +51,8 @@ if __name__ == '__main__':
     try:
         rclpy.init()
 
-        BAG_DIR = '/home/yashpanthri-unbuntu22/CARLA_PROJECT/mini_adas/src/plotly_ros/plotly_ros/rosbag2_2025_07_16-07_06_16'
-        OUT_CSV = '/home/yashpanthri-unbuntu22/CARLA_PROJECT/mini_adas/src/plotly_ros/plotly_ros/odometry_x_pos_and_vel.csv'
+        BAG_DIR = '/home/yashpanthri-unbuntu22/CARLA_PROJECT/mini_adas/src/plotly_ros/plotly_ros/rosbag2_2025_07_16-07_06_16' # ros2 traj data
+        OUT_CSV = '/home/yashpanthri-unbuntu22/CARLA_PROJECT/mini_adas/src/plotly_ros/plotly_ros/odometry_x_pos_and_vel.csv' # ros2 traj data.csv
         TOPIC   = '/carla/hero/odometry'
 
         read_bag_to_csv(BAG_DIR, OUT_CSV, TOPIC)
