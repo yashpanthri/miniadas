@@ -6,7 +6,7 @@ import pandas as pd
 
 # === SETTINGS ===
 # bag_path = '/home/yashpanthri-unbuntu22/CARLA_PROJECT/mini_adas/src/plotly_ros/plotly_ros/rosbag2_2025_07_26-00_38_56'  # <-- Change this to your bag folder path
-bag_path = '/home/yashpanthri-unbuntu22/CARLA_PROJECT/mini_adas/src/plotly_ros/plotly_ros/rosbag2_2025_07_26-00_43_17' # ros2 sim data
+bag_path = '/home/yashpanthri-unbuntu22/CARLA_PROJECT/mini_adas/src/plotly_ros/plotly_ros/rosbag2_2025_07_26-03_26_19' # ros2 sim data
 
 topics_to_extract = [
     "/carla/hero/speedometer",

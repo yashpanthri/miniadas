@@ -56,13 +56,13 @@ class OdomTransformNode(Node):
         #Declare parameters with default values
         self.declare_parameter("ctrl_hz", 20.0)
         # self.declare_parameter("lookahead_sec", LOOKAHEAD_SEC)
-        self.declare_parameter("kp_pos", 0.4)
-        self.declare_parameter("kp_vel", 0.4)
-        self.declare_parameter("ki", 0.01)
-        self.declare_parameter("kd", 0.3)
-        self.declare_parameter("a_max", 3.0)
-        self.declare_parameter("b_max", 6.0)
-        self.declare_parameter("lookahead_distance", 5.0)
+        self.declare_parameter("kp_pos", 0.08) # Began with 0.4, 10.0
+        self.declare_parameter("kp_vel", 4.0) # Began with 0.4, 2.0
+        self.declare_parameter("ki", 0.28) # Began with 0.01, 0.01
+        self.declare_parameter("kd", 0.5) # Began with 0.3, 0.1
+        # self.declare_parameter("a_max", 3.0)
+        # self.declare_parameter("b_max", 6.0)
+        self.declare_parameter("lookahead_distance", 15.0) # Began with 5.0
 
         #Read parameter values from launch file         
         self.ctrl_hz = self.get_parameter('ctrl_hz').value
@@ -73,8 +73,8 @@ class OdomTransformNode(Node):
 
         self.ki = self.get_parameter('ki').value
         self.kd = self.get_parameter('kd').value
-        self.a_max = self.get_parameter('a_max').value
-        self.b_max = self.get_parameter('b_max').value
+        # self.a_max = self.get_parameter('a_max').value
+        # self.b_max = self.get_parameter('b_max').value
 
         self.curr_pos_error = 0.0
         self.previous_vel_error = 0.0
@@ -195,7 +195,7 @@ class OdomTransformNode(Node):
                 control_cmd.throttle = 0.5  # Adjust throttle as needed
                 control_cmd.brake = 0.0
                 control_cmd.steer = 0.0
-                if self.current_speed(self.curr_x_vel, self.curr_y_vel)>5.0:
+                if self.current_speed(self.curr_x_vel, self.curr_y_vel)>3.0:
                     control_cmd.throttle = 0.0
                 self.get_logger().info(f"Throttle: {control_cmd.throttle}")
                 self.cmd_pub.publish(control_cmd)
@@ -262,6 +262,7 @@ class OdomTransformNode(Node):
         # 2D position error
         target_x = self.trajectory_data[target_index][0]
         target_y = self.trajectory_data[target_index][1]
+        target_speed = math.sqrt(self.trajectory_data[target_index][2]**2 + self.trajectory_data[target_index][3]**2)
         # 2D Euclidean distance error
         self.curr_pos_error = math.sqrt((target_x - self.curr_x_pos)**2 + (target_y - self.curr_y_pos)**2)  # 2D DISTANCE
 
@@ -279,6 +280,8 @@ class OdomTransformNode(Node):
         if control_signal>0:
             control_cmd.throttle = min(control_signal, 1.0)
             control_cmd.brake = 0.0
+            if(target_speed<self.current_speed(self.curr_x_vel, self.curr_y_vel)+0.1):
+                control_cmd.throttle = 0.0
         else:
             control_cmd.throttle = 0.0
             control_cmd.brake = min(-control_signal, 1.0)
@@ -366,10 +369,6 @@ class OdomTransformNode(Node):
         self.get_logger().info(f"PID timer created with frequency: {self.ctrl_hz} Hz")
 
 
-
-
-
-
 def main():
     rclpy.init()
     node = OdomTransformNode()
@@ -378,8 +377,6 @@ def main():
     node.get_pid_control_run()
     # node.complete_brake()
     node.get_logger().info(f"Node shutdown!")
-
-
 
     try:
         rclpy.spin(node)
