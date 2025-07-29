@@ -143,3 +143,6 @@ src/plotly_ros/plotly_ros/rosbag2_2025_07_26-14_04_28/rosbag2_2025_07_26-14_04_2
 src/plotly_ros/plotly_ros/rosbag2_2025_07_26-14_07_14/metadata.yaml
 src/plotly_ros/plotly_ros/rosbag2_2025_07_26-14_07_14/rosbag2_2025_07_26-14_07_14_0.db3
 src/plotly_ros/plotly_ros/CSV/Video/Steering Videos/Video1/pure pursuit output.pdf
+src/plotly_ros/plotly_ros/CSV/Video/Steering Videos/Video1/gif conversion/converted_video.mp4
+src/plotly_ros/plotly_ros/CSV/Video/Steering Videos/Video1/error_analysis.pdf
+src/plotly_ros/plotly_ros/CSV/Video/Steering Videos/Video1/gif conversion/mp4_steering_simulation.mp4
