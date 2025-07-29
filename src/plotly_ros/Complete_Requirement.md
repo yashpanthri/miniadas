@@ -48,6 +48,8 @@ src/plotly_ros/plotly_ros/
     ros2_bag_to_csv_final.py         # Rosbag to CSV extractor
     trajectory_publisher.py          # Publishes trajectory from CSV
     final_pid.py                     # Advanced PID controller
+    csv_plotly_dashboard.py          # Data comparison dashboard
+    error_analysis_dashboard.py      # Error analysis dashboard
     CSV/                             # Preprocessed and merged CSVs
     PID_longitudinal datas/          # Logs and plots for PID runs
     PID tuning plots/                # Plots and logs for PID tuning
@@ -193,7 +195,23 @@ src/plotly_ros/plotly_ros/
 
 ---
 
-## 6. Important Notes, Tips, and Troubleshooting
+## 6. Quick Script Reference - How to Run Each Script
+
+| Script | Command | Requirements | Purpose |
+|--------|---------|--------------|---------|
+| `combined_plotly_dashboard.py` | `python3 combined_plotly_dashboard.py` | ROS2 running, CARLA topics active | Real-time full sensor dashboard |
+| `carla_odom_dash.py` | `python3 carla_odom_dash.py` | ROS2 running, `/carla/hero/odometry` topic | Simple 2D trajectory plot |
+| `pid_ros2_node.py` | `python3 pid_ros2_node.py` | ROS2 running, `/carla/hero/speedometer` topic | Basic PID speed controller |
+| `plot_log_file.py` | `python3 plot_log_file.py` | `complete_log.csv` file exists | Plot PID controller logs |
+| `ros2_bag_to_csv_final.py` | `python3 ros2_bag_to_csv_final.py` | ROS2 bag file in directory | Extract bag data to CSV |
+| `trajectory_publisher.py` | `python3 trajectory_publisher.py` | CSV trajectory file, ROS2 running | Publish trajectory from CSV |
+| `final_pid.py` | `python3 final_pid.py` | ROS2 running, trajectory CSV, odometry topic | Advanced PID controller |
+| `csv_plotly_dashboard.py` | `python3 csv_plotly_dashboard.py` | `carla_merged_data.csv` and `pid_merged.csv` in CSV/ | Compare CARLA vs PID data |
+| `error_analysis_dashboard.py` | `python3 error_analysis_dashboard.py` | `carla_merged_data.csv` and `pid_merged.csv` in CSV/ | Error analysis and statistics |
+
+---
+
+## 7. Important Notes, Tips, and Troubleshooting
 
 - **Timestamps:** For custom topics, always set `header.stamp` to current ROS time for alignment.
 - **Data Normalization:** Normalize timestamps/positions in plotting code for easy comparison.
@@ -206,7 +224,7 @@ src/plotly_ros/plotly_ros/
 
 ---
 
-## 7. Example Vehicle Info (for reference)
+## 8. Example Vehicle Info (for reference)
 
 ```
 ros2 topic echo /carla/hero/vehicle_info
@@ -227,7 +245,7 @@ center_of_mass:
 
 ---
 
-## 8. References
+## 9. References
 
 - [CARLA Simulator Documentation](https://carla.readthedocs.io/)
 - [ROS 2 Documentation](https://docs.ros.org/en/humble/index.html)
@@ -236,4 +254,188 @@ center_of_mass:
 
 ---
 
-**For any issues, check this file, the README, or my code comments!** 
+**For any issues, check this file, the README, or my code comments!**
+
+---
+
+# CARLA and PID Data Analysis Dashboards
+
+This section describes the comprehensive Plotly Dash dashboards for analyzing CARLA and PID controller data:
+
+## 📊 Available Dashboards
+
+### 1. Data Comparison Dashboard (`csv_plotly_dashboard.py`)
+**Port: 8051** - http://localhost:8051
+
+**Purpose:** Side-by-side comparison of CARLA and PID data with overlay visualizations.
+
+**Features:**
+- X Position vs. Time comparison
+- Y Position vs. Time comparison  
+- Trajectory comparison (Y vs X Position)
+- GNSS coordinates vs Time
+- GNSS Longitude vs Latitude
+- IMU acceleration (X, Y, Z) vs Time
+- Vehicle speed comparison
+- Interactive plots with hover information
+- Position-based time alignment
+
+### 2. Error Analysis Dashboard (`error_analysis_dashboard.py`)
+**Port: 8052** - http://localhost:8052
+
+**Purpose:** Real-time error analysis and statistical metrics between CARLA and PID data.
+
+**Features:**
+- **Real-time Distance Error:** Euclidean distance between positions
+- **Real-time Velocity Error:** Speed and velocity component differences
+- **Root Mean Square Error (RMSE):** For position and velocity
+- **Average Error and Standard Deviation:** Comprehensive statistical analysis
+- **Error Distribution Histograms:** Visual error patterns
+- **Cumulative Error Analysis:** Error accumulation over time
+- **Performance Metrics:** Rolling RMSE and mean error trends
+- **Correlation Analysis:** Position and speed correlation coefficients
+
+## 🚀 Quick Start
+
+### Launch Individual Dashboards
+```bash
+# Data Comparison Dashboard
+python csv_plotly_dashboard.py
+
+# Error Analysis Dashboard
+python error_analysis_dashboard.py
+```
+
+### Integration with ROS2 Launch System
+You can integrate these dashboards with your existing ROS2 launch system by adding them to your launch files. For example, you can modify your `trajectorypublisher_finalpid_launch.py` to include these dashboards.
+
+## 📁 Required Data Files
+
+The dashboards expect the following CSV files in the `CSV/` directory:
+- `carla_merged_data.csv` - CARLA simulation data
+- `pid_merged.csv` - PID controller data
+
+### Expected CSV Columns:
+- `timestamp_ns` - Nanosecond timestamp
+- `odom.pos.x`, `odom.pos.y` - Position coordinates
+- `odom.vel.x`, `odom.vel.y` - Velocity components
+- `speed` - Vehicle speed
+- `gnss.latitude`, `gnss.longitude` - GPS coordinates
+- `imu.linear.x`, `imu.linear.y`, `imu.linear.z` - IMU acceleration
+
+## 📈 Error Analysis Metrics
+
+The Error Analysis Dashboard provides comprehensive metrics:
+
+### Position Errors
+- **Distance RMSE:** Root Mean Square Error of Euclidean distance
+- **Distance Mean Error:** Average distance error
+- **Distance Standard Deviation:** Spread of distance errors
+- **X/Y Position RMSE:** Individual axis error metrics
+
+### Velocity Errors
+- **Speed RMSE:** Root Mean Square Error of speed
+- **Speed Mean Error:** Average speed error
+- **Speed Standard Deviation:** Spread of speed errors
+- **Velocity Magnitude RMSE:** Overall velocity vector error
+
+### Statistical Analysis
+- **Correlation Coefficients:** How well CARLA and PID data correlate
+- **Maximum/Minimum Errors:** Peak error values
+- **Error Distributions:** Histogram analysis of error patterns
+- **Cumulative Errors:** Error accumulation over time
+
+## 🔧 Technical Details
+
+### Data Alignment
+Both dashboards use position-based time alignment to ensure fair comparison:
+1. Find overlapping X position ranges between datasets
+2. Align at a reference position in the middle of overlap
+3. Apply time offset to synchronize datasets
+4. Interpolate PID data to match CARLA timestamps
+
+### Error Calculations
+- **Distance Error:** `√((x_carla - x_pid)² + (y_carla - y_pid)²)`
+- **Speed Error:** `speed_carla - speed_pid`
+- **Velocity Error:** `√((vx_carla - vx_pid)² + (vy_carla - vy_pid)²)`
+- **RMSE:** `√(mean(error²))`
+
+### Performance Features
+- Real-time data processing
+- Interactive Plotly visualizations
+- Responsive web interface
+- Hover information and tooltips
+- Export capabilities (built into Plotly)
+
+## 🎯 Use Cases
+
+### For Researchers
+- Compare controller performance against ground truth
+- Analyze error patterns and trends
+- Validate PID controller tuning
+- Generate publication-quality plots
+
+### For Engineers
+- Debug controller behavior
+- Monitor real-time performance
+- Identify areas for improvement
+- Validate simulation accuracy
+
+### For Students
+- Learn about error analysis methods
+- Understand PID controller performance
+- Visualize data relationships
+- Practice statistical analysis
+
+## 🔍 Troubleshooting
+
+### Common Issues
+
+1. **"File not found" errors:**
+   - Ensure CSV files exist in the `CSV/` directory
+   - Check file permissions
+
+2. **"No data available" plots:**
+   - Verify CSV files contain required columns
+   - Check for data alignment issues
+
+3. **Port conflicts:**
+   - Change ports in the script if 8051/8052 are in use
+   - Kill existing processes using those ports
+
+4. **Memory issues with large datasets:**
+   - Consider downsampling data
+   - Use smaller time windows for analysis
+
+### Performance Tips
+- Use smaller datasets for faster loading
+- Close unused browser tabs
+- Monitor system resources during analysis
+
+## 📊 Example Output
+
+The Error Analysis Dashboard provides:
+- Real-time error plots with mean and RMSE lines
+- Statistical summary panels
+- Error distribution histograms
+- Performance trend analysis
+- Correlation metrics
+
+## 🤝 Contributing
+
+To extend the dashboards:
+1. Add new error metrics in `calculate_errors()`
+2. Create new visualization callbacks
+3. Update the layout with new components
+4. Test with different datasets
+
+## 📝 Dependencies
+
+Required Python packages:
+```bash
+pip install dash plotly pandas numpy scipy
+```
+
+## 📄 License
+
+This project is part of the CARLA ADAS development environment. 
