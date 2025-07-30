@@ -497,7 +497,7 @@ This section showcases the visual outputs, plots, and demonstrations generated b
 
 *Demonstration of pure pursuit steering control algorithm in action during autonomous vehicle navigation.*
 
-### 📈 Analysis Plots and Charts
+### Analysis Plots and Charts
 
 #### Position Comparison Analysis
 ![Position Comparison](src/plotly_ros/plotly_ros/CSV/Video/Steering%20Videos/Video1/dashboard_graph_photos/plots/position_comparison.png)
@@ -615,16 +615,16 @@ python3 csv_plotly_dashboard.py
 
 ## Features
 
-- ✅ **Real-time Data Visualization** with Plotly Dash
-- ✅ **PID Controller Implementation** for vehicle control
-- ✅ **Comprehensive Error Analysis** with statistical metrics
-- ✅ **Multi-sensor Data Fusion** (IMU, GNSS, Odometry)
-- ✅ **Interactive Dashboards** for data comparison
-- ✅ **ROS 2 Integration** for robotics applications
-- ✅ **CARLA Simulator Support** for realistic testing
-- ✅ **Data Export & Analysis** tools
-- ✅ **Performance Metrics** calculation (RMSE, etc.)
-- ✅ **Visual Documentation** with plots and GIFs
+- **Real-time Data Visualization** with Plotly Dash
+- **PID Controller Implementation** for vehicle control
+- **Comprehensive Error Analysis** with statistical metrics
+- **Multi-sensor Data Fusion** (IMU, GNSS, Odometry)
+- **Interactive Dashboards** for data comparison
+- **ROS 2 Integration** for robotics applications
+- **CARLA Simulator Support** for realistic testing
+- **Data Export & Analysis** tools
+- **Performance Metrics** calculation (RMSE, etc.)
+- **Visual Documentation** with plots and GIFs
 
 ---
 
