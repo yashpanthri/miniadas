@@ -1,0 +1,1 @@
+yolo_perception.py reads from ros2 topic '/carla/hero/rgb_front/image' uses Cv bridge to convert ros2 image to cv2 image and then implement yolo object detection using yolo model "yolov8n.pt"
