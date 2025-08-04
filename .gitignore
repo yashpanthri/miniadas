@@ -152,3 +152,16 @@ src/plotly_ros/plotly_ros/CSV/Video/Steering Videos/Video1/dashboard_graph_photo
 src/plotly_ros/plotly_ros/CSV/Video/Steering Videos/Video1/dashboard_graph_photos/IMU_comparison.png
 src/plotly_ros/plotly_ros/CSV/Video/Steering Videos/Video1/dashboard_graph_photos/position_comparison.png
 src/plotly_ros/plotly_ros/CSV/Video/Steering Videos/Video1/dashboard_graph_photos/speedometer_comparison.png
+src/percep_plan/percep_plan/test_code.py
+training_history.png
+src/percep_plan/percep_plan/only_yolo_perception.py
+.gitignore
+src/percep_plan/percep_plan/test_bisenetv2_offline.py
+src/percep_plan/percep_plan/test_bisenetv2.py
+src/percep_plan/percep_plan/test_road_detection.py
+src/percep_plan/percep_plan/test_yolo_seg.py
+src/percep_plan/percep_plan/train_yolo_seg.py
+src/percep_plan/percep_plan/BiSeNetV2_carla.v6i.png-mask-semantic/*
+src/percep_plan/percep_plan/carla_images/*
+yolov8x-seg.pt
+bisenetv2_carla_final.pth

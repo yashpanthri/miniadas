@@ -1,0 +1,9 @@
+source;share/percep_plan/hook/pythonpath.ps1
+source;share/percep_plan/hook/pythonpath.dsv
+source;share/percep_plan/hook/pythonpath.sh
+source;share/percep_plan/hook/ament_prefix_path.ps1
+source;share/percep_plan/hook/ament_prefix_path.dsv
+source;share/percep_plan/hook/ament_prefix_path.sh
+source;../../build/percep_plan/share/percep_plan/hook/pythonpath_develop.ps1
+source;../../build/percep_plan/share/percep_plan/hook/pythonpath_develop.dsv
+source;../../build/percep_plan/share/percep_plan/hook/pythonpath_develop.sh

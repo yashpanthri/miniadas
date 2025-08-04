@@ -12,6 +12,8 @@ plotly_ros/carla_pid.py
 plotly_ros/combined_plotly_dashboard.py
 plotly_ros/combined_plotly_plot.py
 plotly_ros/compare_pid_vs_trajectory_plot.py
+plotly_ros/csv_plotly_dashboard.py
+plotly_ros/error_analysis_dashboard.py
 plotly_ros/final_pid.py
 plotly_ros/longitudinal_speed_matching_pid.py
 plotly_ros/longitudinal_trajectory_control_pid.py
