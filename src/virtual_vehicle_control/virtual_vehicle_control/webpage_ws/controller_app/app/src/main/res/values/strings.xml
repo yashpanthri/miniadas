@@ -1,0 +1,11 @@
+<resources>
+    <string name="app_name">first_app</string>
+    <string name="heading">CARLA Ego Vehicle Controller</string>
+    <string name="left_button">L</string>
+    <string name="right_button">R</string>
+    <string name="throttle_button">Throttle</string>
+    <string name="brake_button">Brake</string>
+    <string name="gear_toggle">Forward/Reverse</string>
+    <string name="gear_forward">Forward</string>
+    <string name="gear_reverse">Reverse</string>
+</resources>

@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>CARLA Ego Vehicle Control</title>
+    <script src="https://static.robotwebtools.org/roslibjs/current/roslib.min.js"></script>
+</head>
+<body>
+    <h2>CARLA Ego Vehicle Control Panel</h2>
+    <p id="status">Connecting...</p>
+
+    <button onclick="sendCmd(1, 0)">↑ Forward</button><br><br>
+    <button onclick="sendCmd(0, 1)">← Left</button>
+    <button onclick="sendCmd(0, -1)">→ Right</button><br><br>
+    <button onclick="sendCmd(-1, 0)">↓ Reverse</button><br><br>
+    <button onclick="sendCmd(0, 0)">⏹ Stop</button>
+
+    <script>
+        const ros = new ROSLIB.Ros({
+            url: 'ws://localhost:9090'
+        });
+
+        ros.on('connection', function () {
+            document.getElementById('status').innerText = '✅ Connected to ROSBridge';
+        });
+
+        ros.on('error', function (error) {
+            document.getElementById('status').innerText = '❌ Error connecting to ROSBridge';
+        });
+
+        ros.on('close', function () {
+            document.getElementById('status').innerText = '🔌 Connection closed';
+        });
+
+        const cmdVel = new ROSLIB.Topic({
+            ros: ros,
+            name: '/carla/hero/cmd_vel',
+            messageType: 'geometry_msgs/msg/Twist'
+        });
+
+        function sendCmd(linearX, angularZ) {
+            const twist = new ROSLIB.Message({
+                linear: { x: linearX, y: 0, z: 0 },
+                angular: { x: 0, y: 0, z: angularZ }
+            });
+            cmdVel.publish(twist);
+        }
+    </script>
+</body>
+</html>
