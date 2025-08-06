@@ -165,3 +165,7 @@ src/percep_plan/percep_plan/BiSeNetV2_carla.v6i.png-mask-semantic/*
 src/percep_plan/percep_plan/carla_images/*
 yolov8x-seg.pt
 bisenetv2_carla_final.pth
+src/virtual_vehicle_control/android_app_setup_file.md
+src/virtual_vehicle_control/virtual_vehicle_control/webpage_ws/node_modules/*
+build/*
+log/latest_build
