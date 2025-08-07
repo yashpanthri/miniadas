@@ -13,96 +13,128 @@
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_marginTop="32dp"
-        android:fontFamily="sans-serif-light"
+        android:fontFamily="sans-serif-black"
         android:text="@string/heading"
         android:textColor="@android:color/white"
         android:textSize="26sp"
+        android:textStyle="bold"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <!-- Steering Controls Group (Bottom-Left) -->
-    <LinearLayout
-        android:id="@+id/steering_controls"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginStart="24dp"
-        android:layout_marginBottom="24dp"
-        android:orientation="horizontal"
+    <!-- Left Steering Button -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/left_button_card"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_marginStart="32dp"
+        android:layout_marginBottom="32dp"
+        app:cardBackgroundColor="#4A5568"
+        app:cardCornerRadius="40dp"
+        app:cardElevation="4dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintStart_toStartOf="parent">
 
-        <!-- Left Button -->
         <Button
             android:id="@+id/left_button"
-            style="@style/Widget.AppCompat.Button.Colored"
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            android:backgroundTint="#4A5568"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="?attr/selectableItemBackgroundBorderless"
             android:text="@string/left_button"
             android:textColor="@android:color/white"
             android:textSize="24sp" />
+    </androidx.cardview.widget.CardView>
 
-        <!-- Right Button -->
+    <!-- Right Steering Button -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/right_button_card"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_marginStart="16dp"
+        app:cardBackgroundColor="#4A5568"
+        app:cardCornerRadius="40dp"
+        app:cardElevation="4dp"
+        app:layout_constraintStart_toEndOf="@+id/left_button_card"
+        app:layout_constraintTop_toTopOf="@+id/left_button_card">
+
         <Button
             android:id="@+id/right_button"
-            style="@style/Widget.AppCompat.Button.Colored"
-            android:layout_width="80dp"
-            android:layout_height="80dp"
-            android:layout_marginStart="16dp"
-            android:backgroundTint="#4A5568"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="?attr/selectableItemBackgroundBorderless"
             android:text="@string/right_button"
             android:textColor="@android:color/white"
             android:textSize="24sp" />
-    </LinearLayout>
+    </androidx.cardview.widget.CardView>
 
-    <!-- Gear Toggle Button (Bottom-Center) -->
-    <ToggleButton
-        android:id="@+id/gear_toggle"
-        android:layout_width="100dp"
-        android:layout_height="60dp"
+    <!-- Throttle Pedal -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/throttle_button_card"
+        android:layout_width="80dp"
+        android:layout_height="180dp"
+        android:layout_marginEnd="32dp"
         android:layout_marginBottom="32dp"
-        android:backgroundTint="#F59E0B"
-        android:textColor="@android:color/black"
-        android:textOff="@string/gear_forward"
-        android:textOn="@string/gear_reverse"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintEnd_toStartOf="@+id/pedal_controls"
-        app:layout_constraintStart_toEndOf="@+id/steering_controls" />
-
-    <!-- Pedal Controls Group (Bottom-Right) -->
-    <LinearLayout
-        android:id="@+id/pedal_controls"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginEnd="24dp"
-        android:layout_marginBottom="24dp"
-        android:orientation="horizontal"
+        app:cardBackgroundColor="#43A047"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="4dp"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent">
 
-        <!-- Brake Pedal -->
-        <Button
-            android:id="@+id/brake_button"
-            style="@style/Widget.AppCompat.Button.Colored"
-            android:layout_width="80dp"
-            android:layout_height="140dp"
-            android:backgroundTint="#E53935"
-            android:text="@string/brake_button"
-            android:textColor="@android:color/white"
-            android:textSize="16sp" />
-
-        <!-- Throttle Pedal -->
         <Button
             android:id="@+id/throttle_button"
-            style="@style/Widget.AppCompat.Button.Colored"
-            android:layout_width="80dp"
-            android:layout_height="180dp"
-            android:layout_marginStart="16dp"
-            android:backgroundTint="#43A047"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="?attr/selectableItemBackground"
+            android:gravity="center"
             android:text="@string/throttle_button"
             android:textColor="@android:color/white"
             android:textSize="16sp" />
-    </LinearLayout>
+    </androidx.cardview.widget.CardView>
+
+    <!-- Brake Pedal -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/brake_button_card"
+        android:layout_width="80dp"
+        android:layout_height="140dp"
+        android:layout_marginEnd="16dp"
+        app:cardBackgroundColor="#E53935"
+        app:cardCornerRadius="20dp"
+        app:cardElevation="4dp"
+        app:layout_constraintBottom_toBottomOf="@+id/throttle_button_card"
+        app:layout_constraintEnd_toStartOf="@+id/throttle_button_card">
+
+        <Button
+            android:id="@+id/brake_button"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="?attr/selectableItemBackground"
+            android:gravity="center"
+            android:text="@string/brake_button"
+            android:textColor="@android:color/white"
+            android:textSize="16sp" />
+    </androidx.cardview.widget.CardView>
+
+    <!-- Gear Toggle Button -->
+    <androidx.cardview.widget.CardView
+        android:id="@+id/gear_toggle_card"
+        android:layout_width="100dp"
+        android:layout_height="60dp"
+        android:layout_marginBottom="32dp"
+        app:cardBackgroundColor="#F59E0B"
+        app:cardCornerRadius="30dp"
+        app:cardElevation="4dp"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/brake_button_card"
+        app:layout_constraintStart_toEndOf="@+id/right_button_card">
+
+        <ToggleButton
+            android:id="@+id/gear_toggle"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@android:color/transparent"
+            android:textColor="@android:color/black"
+            android:textOff="@string/gear_forward"
+            android:textOn="@string/gear_reverse" />
+    </androidx.cardview.widget.CardView>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

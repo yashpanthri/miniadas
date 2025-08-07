@@ -1,5 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
 
-    <style name="Theme.Controller_app" parent="android:Theme.Material.Light.NoActionBar" />
+    <!--
+    The parent theme is changed to "Theme.MaterialComponents.DayNight.NoActionBar".
+    This is the correct and most stable theme from the Material Components library
+    for an app using AppCompatActivity and XML layouts with components like CardView.
+    This change will resolve the runtime crash.
+    -->
+    <style name="Theme.Controller_app" parent="Theme.MaterialComponents.DayNight.NoActionBar" />
+
 </resources>
