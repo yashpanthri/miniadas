@@ -19,9 +19,10 @@ import okhttp3.WebSocketListener
 
 class MainActivity : AppCompatActivity() {
 
-    // UI Elements - Declared here for easy access in callbacks
+    // UI Elements
     private lateinit var heading: TextView
     private lateinit var gearToggle: ToggleButton
+    private lateinit var statusText: TextView
 
     /** ─────────── ROSBRIDGE CLIENT ─────────── */
     private inner class RosBridgeClient(
@@ -46,9 +47,8 @@ class MainActivity : AppCompatActivity() {
         override fun onOpen(webSocket: WebSocket, response: Response) {
             super.onOpen(webSocket, response)
             runOnUiThread {
-                // --- THIS IS THE CHANGE ---
-                // Update the heading to the desired title on successful connection
                 heading.text = "CARLA Ego Vehicle Controller"
+                updateStatusText()
             }
         }
 
@@ -57,6 +57,7 @@ class MainActivity : AppCompatActivity() {
             Log.e("RosBridgeClient", "Connection Failed!", t)
             runOnUiThread {
                 heading.text = "Connection Failed"
+                statusText.text = "---"
             }
         }
 
@@ -89,7 +90,7 @@ class MainActivity : AppCompatActivity() {
 
     // App-wide state
     private val ros = RosBridgeClient()
-    private var gear = 1          // 1 = F, −1 = R
+    private var gear = 1
     private var steer = 0f
     private var throttle = 0f
     private var brake = 0f
@@ -112,14 +113,15 @@ class MainActivity : AppCompatActivity() {
         ros.connect()
 
         heading = findViewById(R.id.heading)
+        statusText = findViewById(R.id.status_text)
         val leftButton: Button = findViewById(R.id.left_button)
         val rightButton: Button = findViewById(R.id.right_button)
         val throttleButton: Button = findViewById(R.id.throttle_button)
         val brakeButton: Button = findViewById(R.id.brake_button)
         gearToggle = findViewById(R.id.gear_toggle)
 
-        // Set a more descriptive initial heading
         heading.text = "Connecting to CARLA..."
+        updateStatusText()
 
         leftButton.setOnTouchListener { _, ev ->
             handleButtonPress(ev.action) { steer = if (it) -1f else 0f }
@@ -146,7 +148,11 @@ class MainActivity : AppCompatActivity() {
 
         gearToggle.setOnCheckedChangeListener { _, isChecked ->
             gear = if (isChecked) -1 else 1
-            // A gear change is a single event, so we publish it once immediately.
+            // When gear changes, ensure brake is set correctly for the new idle state
+            if (activeButtons == 0) {
+                brake = if (gear == -1) 0.01f else 0f
+            }
+            updateStatusText()
             publishCurrent()
         }
     }
@@ -154,6 +160,8 @@ class MainActivity : AppCompatActivity() {
     private fun handleButtonPress(action: Int, updateState: (isPressed: Boolean) -> Unit) {
         when (action) {
             MotionEvent.ACTION_DOWN -> {
+                // Clear any holding brake when starting a new action
+                if (brake < 0.1f) brake = 0f
                 activeButtons++
                 updateState(true)
                 if (activeButtons == 1) {
@@ -165,10 +173,31 @@ class MainActivity : AppCompatActivity() {
                 updateState(false)
                 if (activeButtons == 0) {
                     handler.removeCallbacks(publisherRunnable)
+                    // --- THIS IS THE FIX ---
+                    // When idle, apply a tiny holding brake in reverse to prevent
+                    // shifting to neutral, and ensure true coasting in forward.
+                    if (gear == -1) {
+                        brake = 0.01f
+                    } else {
+                        brake = 0f
+                    }
                 }
                 publishCurrent()
             }
         }
+        updateStatusText()
+    }
+
+    private fun updateStatusText() {
+        val gearStatus = if (gear == 1) "Forward" else "Reverse"
+        val actionStatus = when {
+            brake > 0.1f -> "Braking"
+            throttle > 0f -> "Accelerating"
+            steer < 0f -> "Turning Left"
+            steer > 0f -> "Turning Right"
+            else -> "Coasting" // Changed from "Idle" for clarity
+        }
+        statusText.text = "Gear: $gearStatus  |  Action: $actionStatus"
     }
 
     private fun publishCurrent() = ros.publishCtrl(
@@ -187,6 +216,7 @@ class MainActivity : AppCompatActivity() {
         steer = 0f
         brake = 1f
         ros.publishCtrl(0f, 0f, 1f, reverse = gear == -1, gear = gear)
+        updateStatusText()
     }
 
     override fun onDestroy() {
