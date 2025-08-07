@@ -169,3 +169,7 @@ src/virtual_vehicle_control/android_app_setup_file.md
 src/virtual_vehicle_control/virtual_vehicle_control/webpage_ws/node_modules/*
 build/*
 log/latest_build
+src/virtual_vehicle_control/virtual_vehicle_control/logo/ROS2_humble.png
+src/virtual_vehicle_control/virtual_vehicle_control/logo/carla.png
+src/virtual_vehicle_control/virtual_vehicle_control/gifs/controller_app_simulation_test-2025-08-07_04.12.11.mkv
+src/virtual_vehicle_control/virtual_vehicle_control/gifs/controller_app-2025-08-07_04.19.07.mkv
