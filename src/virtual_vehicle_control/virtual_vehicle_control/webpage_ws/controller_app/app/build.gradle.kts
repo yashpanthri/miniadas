@@ -40,6 +40,9 @@ android {
 }
 
 dependencies {
+    // Added these two lines
+    implementation(libs.okhttp)
+    implementation(libs.gson)
 
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)

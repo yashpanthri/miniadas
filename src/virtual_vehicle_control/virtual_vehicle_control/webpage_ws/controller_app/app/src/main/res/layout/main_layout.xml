@@ -2,87 +2,107 @@
 <androidx.constraintlayout.widget.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/linearLayout2"
     android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_height="match_parent"
+    android:background="#2C3E50"
+    tools:context=".MainActivity">
 
+    <!-- Heading TextView, centered at the top -->
     <TextView
         android:id="@+id/heading"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_marginStart="16dp"
-        android:layout_marginTop="16dp"
-        android:fontFamily="@font/rubik_doodle_shadow"
+        android:layout_marginTop="32dp"
+        android:fontFamily="sans-serif-light"
         android:text="@string/heading"
-        android:textAppearance="@android:style/TextAppearance.Material.Large"
+        android:textColor="@android:color/white"
         android:textSize="26sp"
-        android:translationX="170dp"
-        android:translationY="50dp"
+        app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent" />
 
-    <Button
-        android:id="@+id/left_button"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:layout_marginStart="4dp"
-        android:layout_marginBottom="-200dp"
-        android:text="@string/left_button"
-        android:translationX="50dp"
-        android:translationY="-250dp"
+    <!-- Steering Controls Group (Bottom-Left) -->
+    <LinearLayout
+        android:id="@+id/steering_controls"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginStart="24dp"
+        android:layout_marginBottom="24dp"
+        android:orientation="horizontal"
         app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent" />
+        app:layout_constraintStart_toStartOf="parent">
 
-    <Button
-        android:id="@+id/right_button"
-        android:layout_width="50dp"
-        android:layout_height="50dp"
-        android:layout_marginStart="4dp"
-        android:layout_marginBottom="-200dp"
-        android:text="@string/right_button"
-        android:translationX="100dp"
-        android:translationY="-250dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toEndOf="@+id/left_button" />
+        <!-- Left Button -->
+        <Button
+            android:id="@+id/left_button"
+            style="@style/Widget.AppCompat.Button.Colored"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:backgroundTint="#4A5568"
+            android:text="@string/left_button"
+            android:textColor="@android:color/white"
+            android:textSize="24sp" />
 
-    <Button
-        android:id="@+id/throttle_button"
-        android:layout_width="0dp"
-        android:layout_height="100dp"
-        android:layout_marginEnd="70dp"
-        android:layout_marginRight="70dp"
-        android:layout_marginBottom="16dp"
-        android:text="@string/throttle_button"
-        android:translationX="0dp"
-        android:translationY="245dp"
-        app:layout_constraintBottom_toBottomOf="@+id/brake_button"
-        app:layout_constraintEnd_toStartOf="@+id/brake_button"
-        app:layout_constraintStart_toEndOf="@+id/gear_toggle" />
+        <!-- Right Button -->
+        <Button
+            android:id="@+id/right_button"
+            style="@style/Widget.AppCompat.Button.Colored"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
+            android:layout_marginStart="16dp"
+            android:backgroundTint="#4A5568"
+            android:text="@string/right_button"
+            android:textColor="@android:color/white"
+            android:textSize="24sp" />
+    </LinearLayout>
 
-    <Button
-        android:id="@+id/brake_button"
-        android:layout_width="75dp"
-        android:layout_height="100dp"
-        android:layout_marginBottom="84dp"
-        android:text="@string/brake_button"
-        android:translationX="35dp"
-        android:translationY="57dp"
-        app:layout_constraintBottom_toBottomOf="parent"
-        tools:layout_editor_absoluteX="518dp" />
-
+    <!-- Gear Toggle Button (Bottom-Center) -->
     <ToggleButton
         android:id="@+id/gear_toggle"
-        android:layout_width="0dp"
-        android:layout_height="50dp"
-        android:layout_marginEnd="400dp"
-        android:layout_marginRight="400dp"
-        android:checked="false"
-        android:text="@string/gear_toggle"
+        android:layout_width="100dp"
+        android:layout_height="60dp"
+        android:layout_marginBottom="32dp"
+        android:backgroundTint="#F59E0B"
+        android:textColor="@android:color/black"
         android:textOff="@string/gear_forward"
         android:textOn="@string/gear_reverse"
-        android:translationX="-350dp"
-        android:translationY="250dp"
-        app:layout_constraintBaseline_toBaselineOf="@+id/right_button"
-        app:layout_constraintEnd_toStartOf="@+id/throttle_button"
-        app:layout_constraintStart_toEndOf="@+id/right_button" />
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toStartOf="@+id/pedal_controls"
+        app:layout_constraintStart_toEndOf="@+id/steering_controls" />
+
+    <!-- Pedal Controls Group (Bottom-Right) -->
+    <LinearLayout
+        android:id="@+id/pedal_controls"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginEnd="24dp"
+        android:layout_marginBottom="24dp"
+        android:orientation="horizontal"
+        app:layout_constraintBottom_toBottomOf="parent"
+        app:layout_constraintEnd_toEndOf="parent">
+
+        <!-- Brake Pedal -->
+        <Button
+            android:id="@+id/brake_button"
+            style="@style/Widget.AppCompat.Button.Colored"
+            android:layout_width="80dp"
+            android:layout_height="140dp"
+            android:backgroundTint="#E53935"
+            android:text="@string/brake_button"
+            android:textColor="@android:color/white"
+            android:textSize="16sp" />
+
+        <!-- Throttle Pedal -->
+        <Button
+            android:id="@+id/throttle_button"
+            style="@style/Widget.AppCompat.Button.Colored"
+            android:layout_width="80dp"
+            android:layout_height="180dp"
+            android:layout_marginStart="16dp"
+            android:backgroundTint="#43A047"
+            android:text="@string/throttle_button"
+            android:textColor="@android:color/white"
+            android:textSize="16sp" />
+    </LinearLayout>
+
 </androidx.constraintlayout.widget.ConstraintLayout>
